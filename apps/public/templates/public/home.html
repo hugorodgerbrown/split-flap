@@ -1,9 +1,9 @@
 {% extends "public_base.html" %}
 {% load static %}
 {# The front page, in the shape every Titan app shares (DESIGN.md, "The front page"). The board in the hero is the real one (static/css/board.css), drawn with demo boards by apps/public/board.py. #}
-{% block title %}{{ pwa.name }}: turn your TV into a split-flap board{% endblock %}
+{% block title %}{{ pwa.name }}: turn your TV into a split-flap display{% endblock %}
 {% block description %}Type a message from your phone, or let Claude post the news, the weather and your trains. Your TV flips, tile by tile, to show it.{% endblock %}
-{% block share_title %}Turn your TV into a split-flap board{% endblock %}
+{% block share_title %}Turn your TV into a split-flap display{% endblock %}
 {% block share_description %}Type a message from your phone, or let Claude post the news, the weather and your trains. Your TV flips, tile by tile, to show it.{% endblock %}
 {% block extra_css %}<link rel="stylesheet" href="{% static 'css/board.css' %}">{% endblock %}
 {% block extra_js %}
@@ -14,7 +14,7 @@
   {# 2 and 3. Proposition, and the product, live: the board itself, flipping through demo boards. #}
   <section class="hero hero--dark">
     <div class="hero__body stack">
-      <h1>Turn your TV into a split-flap board</h1>
+      <h1>Turn your TV into a split-flap display</h1>
       <p class="hero__lead">Type a message from your phone, or let Claude post the news, the weather and your trains. Your TV flips, tile by tile, to show it.</p>
       {% if user.is_authenticated %}
         <a class="button button--block button--accent" href="{% url 'boards:manage' %}">Open the app</a>
