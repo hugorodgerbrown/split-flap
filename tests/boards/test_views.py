@@ -8,7 +8,7 @@ from django.test import Client
 from django.urls import reverse
 
 from apps.boards.models import MAX_BOARDS
-from apps.boards.services import display_for, post_message
+from apps.boards.services import display_for, post_message, set_sound
 from tests.factories import BoardFactory
 
 pytestmark = pytest.mark.django_db
@@ -333,3 +333,12 @@ def test_sound_switch_needs_sign_in(client: Client, user: Any) -> None:
     assert "/signin/" in response["Location"]
     assert display_for(user).sound is False
     assert client.get(reverse("boards:sound")).status_code == 405
+
+
+def test_tv_page_carries_the_sound_setting(client: Client, user: Any) -> None:
+    """The TV knows the setting from its first draw, before it polls."""
+    display = display_for(user)
+    url = reverse("tv:board", args=[display.uuid])
+    assert b'data-sound="off"' in client.get(url).content
+    set_sound(display, True)
+    assert b'data-sound="on"' in client.get(url).content

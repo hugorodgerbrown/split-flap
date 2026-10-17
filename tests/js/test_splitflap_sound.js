@@ -4,9 +4,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import '../../static/js/flaptext.js';
 
-const PAGE = `
+// The TV's page, as the server draws it with the sound setting ``sound``.
+const page = (sound) => `
   <div class="stage">
-    <div class="board" id="board" data-state-url="/d/x/state/" data-poll-seconds="5">
+    <div class="board" id="board" data-state-url="/d/x/state/" data-poll-seconds="5" data-sound="${sound ? 'on' : 'off'}">
       <div class="grid" id="grid"></div>
       <div class="engrave"><span id="boardName"></span><span id="leds"></span></div>
     </div>
@@ -43,9 +44,9 @@ class FakeAudioContext {
 
 let state;
 
-async function load(sound) {
+async function load(sound, { polled = true } = {}) {
   state = { sound, boards: [{ name: 'Home', message: '', posted_at: null }] };
-  document.body.innerHTML = PAGE;
+  document.body.innerHTML = page(sound);
   vi.useFakeTimers();
   vi.stubGlobal('matchMedia', () => ({ matches: true }));  // reduced motion: tiles snap
   vi.stubGlobal('fetch', vi.fn(async () => ({
@@ -56,7 +57,7 @@ async function load(sound) {
   window.AudioContext = FakeAudioContext;
   vi.resetModules();
   await import('../../static/js/splitflap.js');
-  await poll();
+  if (polled) await poll();
 }
 
 // Let the TV ask the server what to show, and act on the answer.
@@ -93,6 +94,15 @@ describe('the sound setting', () => {
   it('asks for a tap when the setting is on, and starts the sound at the first one', async () => {
     await load(true);
     expect(button().getAttribute('aria-pressed')).toBe('true');
+    expect(hint().hidden).toBe(false);
+    FakeAudioContext.allowed = true;
+    tap();
+    expect(FakeAudioContext.made.at(-1).state).toBe('running');
+    expect(hint().hidden).toBe(true);
+  });
+
+  it('starts the sound at a tap that comes before the first poll', async () => {
+    await load(true, { polled: false });
     expect(hint().hidden).toBe(false);
     FakeAudioContext.allowed = true;
     tap();
@@ -154,7 +164,7 @@ describe('the sound setting', () => {
     await load(false);
     delete window.AudioContext;
     vi.resetModules();
-    document.body.innerHTML = PAGE;
+    document.body.innerHTML = page(false);
     await import('../../static/js/splitflap.js');
     state = { ...state, sound: true };
     await poll();

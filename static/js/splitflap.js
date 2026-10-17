@@ -341,7 +341,10 @@
   // ---- Live content: ask the server what each board shows ----
   let etag = null;
   let lastPosted = null;  // newest posted_at seen; null until the first answer
-  let soundSetting = null;  // the display page's sound setting, as last seen
+  // The display page's sound setting, as last seen. The page carries it, so a tap
+  // before the first poll still starts the sound.
+  let soundSetting = root.dataset.sound === 'on';
+  setSound(soundSetting);
   async function poll() {
     try {
       const response = await fetch(root.dataset.stateUrl, {
@@ -352,9 +355,9 @@
         etag = response.headers.get('ETag');
         const state = await response.json();
         setBoards(state.boards);
-        if (state.sound !== soundSetting) {
-          soundSetting = state.sound;
-          setSound(Boolean(state.sound));
+        if (Boolean(state.sound) !== soundSetting) {
+          soundSetting = Boolean(state.sound);
+          setSound(soundSetting);
         }
         const newest = state.boards.reduce((a, b) => ((b.posted_at || '') > (a.posted_at || '') ? b : a), {});
         // Something new was posted since we last looked: turn to that board so it's seen.
