@@ -39,7 +39,8 @@ services:
       - fromGroup: titan
       - fromGroup: split-flap
 
-  # Deletes expired idempotency records (24 hours) and sign-in requests (15 minutes).
+  # Deletes expired idempotency records (24 hours), sign-in requests (15 minutes)
+  # and TV pairings (10 minutes).
   - type: cron
     name: split-flap-purge
     runtime: python
@@ -49,7 +50,8 @@ services:
     buildCommand: pip install uv==0.12.22 && uv sync --locked --no-dev
     startCommand: >-
       uv run --no-sync python manage.py purge_idempotency_records --commit &&
-      uv run --no-sync python manage.py purge_sign_in_requests --commit
+      uv run --no-sync python manage.py purge_sign_in_requests --commit &&
+      uv run --no-sync python manage.py purge_tv_pairings --commit
     envVars:
       - fromGroup: titan
       - fromGroup: split-flap

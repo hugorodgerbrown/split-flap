@@ -27,6 +27,8 @@ urlpatterns = [
     path("app/", include("apps.boards.urls")),
     # The TV: a display's board and its state, by the display's secret uuid.
     path("d/", include("apps.boards.tv_urls")),
+    # Linking a TV app to a display by code: /d/pair/ for the TV, /app/display/pair/.
+    path("", include("apps.pairing.urls")),
     path("app/", include("apps.design.urls")),
     path("", include("mcp_auth.urls")),
     path("mcp", mcp, name="mcp"),
