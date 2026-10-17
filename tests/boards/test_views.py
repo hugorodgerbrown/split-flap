@@ -394,10 +394,13 @@ def test_tv_page_carries_the_sound_timing_and_replays(client: Client, user: Any)
 
 
 def test_picking_a_board_swaps_it_in_place(signed_in: Client) -> None:
-    """With htmx, picking a board swaps its view, editor and the list, and keeps the page put."""
+    """With htmx, picking a board swaps its view, editor and the list, and keeps the page put.
+
+    A newer pick replaces one still loading, so a slow answer can't land last.
+    """
     content = signed_in.get(reverse("boards:manage")).content.decode()
     assert 'hx-select="#board-view" hx-select-oob="#editor,#boards"' in content
-    assert 'hx-swap="outerHTML show:none" hx-push-url="true"' in content
+    assert 'hx-swap="outerHTML show:none" hx-push-url="true" hx-sync="this:replace"' in content
     for region in ('id="board-view"', 'id="editor"', 'id="boards"'):
         assert region in content
 

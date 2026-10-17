@@ -42,7 +42,7 @@
     <section class="card stack split__side" id="boards" aria-labelledby="boards-h">
       <h2 id="boards-h">Boards</h2>
       {# With htmx, picking a board swaps in its view, editor and this list without moving the page. #}
-      <ol class="item-list" hx-target="#board-view" hx-select="#board-view" hx-select-oob="#editor,#boards" hx-swap="outerHTML show:none" hx-push-url="true">
+      <ol class="item-list" hx-target="#board-view" hx-select="#board-view" hx-select-oob="#editor,#boards" hx-swap="outerHTML show:none" hx-push-url="true" hx-sync="this:replace">
         {% for each in boards %}
           <li class="item">
             <a class="item__main item__title" href="?board={{ each.uuid }}" hx-get="?board={{ each.uuid }}"{% if each == board %} aria-current="page"{% endif %}>{{ each.name }}</a>
