@@ -9,65 +9,92 @@
   <script src="{% static 'js/board_preview.js' %}" defer></script>
 {% endblock %}
 {% block content %}
-  <header>
-    <p class="eyebrow">Your display</p>
-    <h1>{{ display.name }}</h1>
-  </header>
+  <h1 class="eyebrow">Your display</h1>
 
+  {# The selected board, its controls and editor, then the links; the board list beside them on a wide screen. Without JavaScript every form posts and the page reloads on the same board; with it, htmx swaps the part that changed so the page stays put. #}
   <div class="split">
     <section class="stack" aria-label="What the display shows">
-      {% include "boards/_flapboard.html" with id="display-preview" name=preview.name text=shows tag="" %}
-      <p class="meta" data-live-board="{{ preview.name }}" data-posted-at="{{ preview.posted_at.isoformat|default:'' }}" data-state-url="{{ state_url }}" data-poll-seconds="{{ poll_seconds }}" data-preview="display-preview">
-        <strong>{{ preview.name }}</strong> · <span data-posted>{% include "boards/_posted.html" with board=preview %}</span>
-      </p>
-      {% if boards|length > 1 %}
-        <nav class="segmented" aria-label="Preview a board">
-          {% for board in boards %}
-            <a class="segmented__option" href="?board={{ board.uuid }}"{% if board == preview %} aria-current="true"{% endif %}>{{ board.name }}</a>
-          {% endfor %}
-        </nav>
-      {% endif %}
-      {# Without JavaScript each button posts and the page reloads; with it, htmx swaps this card in place so the page stays put. #}
-      <section class="card stack" id="display-controls" aria-labelledby="controls-h" hx-target="#display-controls" hx-select="#display-controls" hx-swap="outerHTML">
-        <h2 id="controls-h">Sound and replay</h2>
-        <form class="setting" id="sound" method="post" action="{% url 'boards:sound' %}" hx-post="{% url 'boards:sound' %}">
-          {% csrf_token %}
-          <span class="setting__text">
-            <span class="item__title" id="sound-label">Sound</span>
-            <span class="meta" id="sound-help">A soft clack as each flap turns. The display starts it at the first tap or key press.</span>
-          </span>
-          {% include "boards/_switch.html" with on=display.sound labelledby="sound-label" describedby="sound-help" %}
+      {% include "boards/_flapboard.html" with id="display-preview" name=board.name text=shows tag="On the display" %}
+      <div class="control-strip">
+        <form id="replay" method="post" action="{% url 'boards:replay' %}" hx-post="{% url 'boards:replay' %}" hx-swap="none">
+          {% csrf_token %}<input type="hidden" name="board" value="{{ board.uuid }}">
+          <button class="icon-button icon-button--round" type="submit" aria-label="Replay on the display" title="Replay on the display"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/></svg></button>
         </form>
-        {% if display.sound %}
-          <form class="setting" id="sound-timing" method="post" action="{% url 'boards:sound_delay' %}" hx-post="{% url 'boards:sound_delay' %}">
-            {% csrf_token %}
-            <span class="setting__text"><span class="item__title" id="sound-timing-label">Sound timing</span><span class="meta" id="sound-timing-help">If the clack sounds late, hold the flaps back until they land together. A soundbar often needs 100 to 200&nbsp;ms.</span></span>
-            <span class="button-row button-row--fixed" role="group" aria-labelledby="sound-timing-label" aria-describedby="sound-timing-help">
+        <p class="meta control-strip__status" data-live-board="{{ board.name }}" data-posted-at="{{ board.posted_at.isoformat|default:'' }}" data-state-url="{{ state_url }}" data-poll-seconds="{{ poll_seconds }}" data-preview="display-preview"><span data-posted>{% include "boards/_posted.html" %}</span></p>
+        <div class="button-row" id="display-controls" hx-target="#display-controls" hx-select="#display-controls" hx-swap="outerHTML">
+          <form class="button-row button-row--fixed" id="sound" method="post" action="{% url 'boards:sound' %}" hx-post="{% url 'boards:sound' %}">
+            {% csrf_token %}<input type="hidden" name="board" value="{{ board.uuid }}">
+            <span class="item__title" id="sound-label">Sound</span><span id="sound-help" hidden>A soft clack as each flap turns. The display starts it at the first tap or key press.</span>
+            {% include "boards/_switch.html" with on=display.sound labelledby="sound-label" describedby="sound-help" %}
+          </form>
+          {% if display.sound %}
+            <form class="button-row button-row--fixed" id="sound-timing" method="post" action="{% url 'boards:sound_delay' %}" hx-post="{% url 'boards:sound_delay' %}" role="group" aria-label="Sound timing" aria-describedby="sound-timing-help" title="Sound timing: if the clack sounds late, hold the flaps back until they land together. A soundbar often needs 100 to 200 ms.">
+              {% csrf_token %}<input type="hidden" name="board" value="{{ board.uuid }}"><span id="sound-timing-help" hidden>If the clack sounds late, hold the flaps back until they land together. A soundbar often needs 100 to 200&nbsp;ms.</span>
               <button class="icon-button" type="submit" name="sound_delay_ms" value="{{ delay_less }}" aria-label="Less delay"{% if not display.sound_delay_ms %} disabled{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg></button>
               <output class="item__title" aria-live="polite">{{ display.sound_delay_ms }}&nbsp;ms</output>
               <button class="icon-button" type="submit" name="sound_delay_ms" value="{{ delay_more }}" aria-label="More delay"{% if delay_more == display.sound_delay_ms %} disabled{% endif %}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
-            </span>
-          </form>
-        {% endif %}
-        <form class="setting" id="replay" method="post" action="{% url 'boards:replay' %}" hx-post="{% url 'boards:replay' %}">
+            </form>
+          {% endif %}
+        </div>
+      </div>
+    </section>
+
+    <section class="card stack split__side" id="boards" aria-labelledby="boards-h">
+      <h2 id="boards-h">Boards</h2>
+      <ol class="item-list">
+        {% for each in boards %}
+          <li class="item">
+            <a class="item__main item__title" href="?board={{ each.uuid }}"{% if each == board %} aria-current="page"{% endif %}>{{ each.name }}</a>
+            <div class="item__actions">
+              {% if boards|length > 1 %}<a class="icon-button" href="{% url 'boards:delete' each.uuid %}" aria-label="Delete {{ each.name }}…" title="Delete {{ each.name }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></a>{% endif %}
+            </div>
+          </li>
+        {% endfor %}
+      </ol>
+      <p class="meta">The display shows them in this order.</p>
+      {% if boards|length < max_boards %}
+        <form class="inline-form" method="post" action="{% url 'boards:add' %}">
           {% csrf_token %}
-          <span class="setting__text">
-            <span class="item__title">Replay</span>
-            <span class="meta">Flip the board on the display again, without changing its message.</span>
-          </span>
-          <button class="button button--secondary" type="submit">Replay</button>
+          <label class="field"><span class="field__label">New board</span>{{ form.name }}</label>
+          <button class="button" type="submit">Add board</button>
         </form>
-      </section>
+        {{ form.name.errors }}
+      {% else %}
+        <p class="meta">A display holds up to {{ max_boards }} boards, so delete one to add another.</p>
+      {% endif %}
     </section>
 
     <div class="stack">
+      <form class="card" id="editor" method="post" action="{% url 'boards:message' board.uuid %}" data-board-editor data-preview="display-preview" data-name="{{ board.name }}" data-saved="{{ board.message }}" data-max-length="{{ max_message_length }}">
+        {% csrf_token %}
+        <div class="editor__body">
+          <div class="editor__text">
+            <label class="field"><span class="field__label">{{ message_form.text.label }}</span>{{ message_form.text }}</label>
+            <p class="editor__counts" id="message-counts" aria-live="polite"><span data-row-count></span><span data-char-count></span></p>
+            {{ message_form.text.errors }}
+          </div>
+          <div class="palette" data-palette hidden>
+            <span class="field__label" id="palette-h">Colours and pictograms</span>
+            <div class="palette__keys" role="group" aria-labelledby="palette-h">
+              {% for key in palette %}
+                <button class="palette__key" type="button" data-insert="{{ key.code }}" aria-label="{{ key.label }}" title="{{ key.code }}">{% include "boards/_flap.html" with tile=key.tile %}</button>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        <div class="editor__actions">
+          <button class="button button--secondary" type="submit" name="clear" value="1">Clear the board</button>
+          <button class="button" type="submit" data-save>Save</button>
+        </div>
+      </form>
+
       <section class="card stack" aria-labelledby="link-h">
         <h2 id="link-h">Your display link</h2>
         <p class="copy-field">
           <code class="copy-field__value" id="tv-url">{{ tv_url }}</code>
           <button class="button button--secondary" type="button" data-copy="{{ tv_url }}" data-copy-target="tv-url" data-copied-label="Copied" hidden>Copy</button>
         </p>
-        <p class="meta">Anyone with this link can see the board, so keep it to your own screens. The display cycles through your boards in the order below.</p>
+        <p class="meta">Anyone with this link can see the board, so keep it to your own screens.</p>
         <p class="meta">Using the Android TV app? <a href="{% url 'pairing:pair' %}">Link it with the code it shows</a>.</p>
       </section>
       {% if mcp_url %}
@@ -82,45 +109,4 @@
       {% endif %}
     </div>
   </div>
-
-  <section class="card stack" id="boards" aria-labelledby="boards-h">
-    <div>
-      <h2 id="boards-h">Boards</h2>
-      <p class="meta">{{ boards|length }} board{{ boards|length|pluralize }} · the display shows them in this order</p>
-    </div>
-    <ol class="item-list">
-      {% for board in boards %}
-        <li class="item">
-          <a class="item__main" href="{% url 'boards:board' board.uuid %}">
-            <span class="item__title">{{ board.name }}</span>
-            <span class="meta">{% if board.message %}{{ board.message }}{% else %}Empty, so the display shows its name{% endif %}</span>
-          </a>
-          <div class="item__actions">
-            <form method="post" action="{% url 'boards:move' board.uuid %}">
-              {% csrf_token %}
-              <button class="icon-button" type="submit" name="direction" value="up" aria-label="Move {{ board.name }} up"{% if forloop.first %} disabled{% endif %}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
-              </button>
-            </form>
-            <form method="post" action="{% url 'boards:move' board.uuid %}">
-              {% csrf_token %}
-              <button class="icon-button" type="submit" name="direction" value="down" aria-label="Move {{ board.name }} down"{% if forloop.last %} disabled{% endif %}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
-              </button>
-            </form>
-          </div>
-        </li>
-      {% endfor %}
-    </ol>
-    {% if boards|length < max_boards %}
-      <form class="inline-form" method="post" action="{% url 'boards:add' %}">
-        {% csrf_token %}
-        <label class="field"><span class="field__label">New board</span>{{ form.name }}</label>
-        <button class="button" type="submit">Add board</button>
-      </form>
-      {{ form.name.errors }}
-    {% else %}
-      <p class="meta">A display holds up to {{ max_boards }} boards, so delete one to add another.</p>
-    {% endif %}
-  </section>
 {% endblock %}

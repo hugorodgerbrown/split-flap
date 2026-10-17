@@ -1,4 +1,4 @@
-"""Forms for a display's boards: a board's message, its name, and its place."""
+"""Forms for a display's boards: a board's message and a new board's name, and its sound."""
 
 from typing import Any
 
@@ -8,7 +8,6 @@ from apps.boards.models import (
     MAX_MESSAGE_LENGTH,
     MAX_NAME_LENGTH,
     SOUND_DELAYS_MS,
-    Board,
     Display,
 )
 from apps.boards.services import BoardError, check_fits, check_name
@@ -36,7 +35,7 @@ class MessageForm(forms.Form):
 
 
 class BoardNameForm(forms.Form):
-    """A name for a new board on ``display``, or a new name for ``board``."""
+    """A name for a new board on ``display``."""
 
     name = forms.CharField(
         label="Name",
@@ -46,18 +45,15 @@ class BoardNameForm(forms.Form):
         ),
     )
 
-    def __init__(
-        self, display: Display, *args: Any, board: Board | None = None, **kwargs: Any
-    ) -> None:
-        """Check names against ``display``'s boards, other than ``board`` itself."""
+    def __init__(self, display: Display, *args: Any, **kwargs: Any) -> None:
+        """Check names against ``display``'s boards."""
         super().__init__(*args, **kwargs)
         self.display = display
-        self.board = board
 
     def clean_name(self) -> str:
         """Refuse a name another board on the display has."""
         try:
-            return check_name(self.display, self.cleaned_data["name"], self.board)
+            return check_name(self.display, self.cleaned_data["name"])
         except BoardError as error:
             raise forms.ValidationError(str(error)) from error
 
@@ -78,13 +74,3 @@ class SoundDelayForm(forms.Form):
     sound_delay_ms = forms.TypedChoiceField(
         coerce=int, choices=[(str(ms), f"{ms} ms") for ms in SOUND_DELAYS_MS]
     )
-
-
-class MoveForm(forms.Form):
-    """Which way to move a board in its display's order."""
-
-    direction = forms.ChoiceField(choices=[("up", "Up"), ("down", "Down")])
-
-    def step(self) -> int:
-        """Return the move as a step along the order."""
-        return -1 if self.cleaned_data["direction"] == "up" else 1

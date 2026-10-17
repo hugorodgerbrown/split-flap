@@ -4,14 +4,14 @@
   <section class="card stack" aria-labelledby="delete-h">
     <h1 id="delete-h">Delete {{ board.name }}?</h1>
     {% if is_last %}
-      <p>{{ board.name }} is the only board on {{ board.display.name }}, and a display needs at least one, so it can't be deleted. Rename it instead.</p>
-      <p><a class="button button--secondary" href="{% url 'boards:board' board.uuid %}">Back to {{ board.name }}</a></p>
+      <p>{{ board.name }} is the only board on {{ board.display.name }}, and a display needs at least one, so it can't be deleted. Change its message instead.</p>
+      <p><a class="button button--secondary" href="{% url 'boards:manage' %}?board={{ board.uuid }}">Back to {{ board.name }}</a></p>
     {% else %}
       <p>Deleting a board takes it off the display. Its message goes, and Routines posting to it will get an error.</p>
       {% if error %}<p class="form-error" role="alert">{{ error }}</p>{% endif %}
       <form class="button-row" method="post">
         {% csrf_token %}
-        <a class="button button--secondary" href="{% url 'boards:board' board.uuid %}">Keep it</a>
+        <a class="button button--secondary" href="{% url 'boards:manage' %}?board={{ board.uuid }}">Keep it</a>
         <button class="button button--danger" type="submit">Delete board</button>
       </form>
     {% endif %}

@@ -1,5 +1,5 @@
-// Tests for static/js/board_preview.js: the board page's live preview and palette,
-// and the display page's preview following the server.
+// Tests for static/js/board_preview.js: the display page's preview, its board
+// editor and palette, and the preview following the server.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import '../../static/js/flaptext.js';
@@ -11,8 +11,7 @@ const BOARD = `
   <div class="board board--fluid" id="preview" data-flapboard data-pictograms="/static/img/pictograms.svg">
     <div class="grid" data-flapboard-grid></div>
     <div class="engrave"><span>News</span><span data-flapboard-tag>On the display</span></div>
-  </div>
-  <p data-draft-note>This is what the display shows on this board now.</p>`;
+  </div>`;
 
 const tiles = () => [...document.querySelectorAll('[data-flapboard-grid] > .cell')];
 // What the top halves say: each cell shows one face in both halves.
@@ -85,7 +84,6 @@ describe('editor', () => {
     type('New');
     expect(shown()).toBe('NEW');
     expect(tag()).toBe('Draft');
-    expect(document.querySelector('[data-draft-note]').textContent).toMatch(/until you save/);
     expect(save.disabled).toBe(false);
   });
 
@@ -159,6 +157,42 @@ describe('live', () => {
     BoardPreview.live(status);
     await vi.advanceTimersByTimeAsync(0);
     expect(tiles()).toHaveLength(0);
+  });
+
+  describe('beside the board editor', () => {
+    let form, textarea;
+
+    beforeEach(() => {
+      document.body.insertAdjacentHTML('beforeend', `
+        <form data-board-editor data-preview="preview" data-name="News" data-saved="Old" data-max-length="400">
+          <textarea name="text">Old</textarea>
+          <p><span data-row-count></span><span data-char-count></span></p>
+          <button type="submit" data-save>Save</button>
+        </form>`);
+      form = document.querySelector('form');
+      textarea = form.querySelector('textarea');
+      BoardPreview.editor(form);
+      vi.useFakeTimers();
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(state('2026-10-17T07:00:00+00:00', 'Sunny')));
+    });
+
+    it('puts a new post in the editor too, so Save stays off', async () => {
+      BoardPreview.live(document.querySelector('[data-live-board]'));
+      await vi.advanceTimersByTimeAsync(0);
+      expect(textarea.value).toBe('Sunny');
+      expect(shown()).toBe('SUNNY');
+      expect(form.querySelector('[data-save]').disabled).toBe(true);
+    });
+
+    it('leaves a draft alone', async () => {
+      textarea.value = 'Mine';
+      textarea.dispatchEvent(new Event('input', { bubbles: true }));
+      BoardPreview.live(document.querySelector('[data-live-board]'));
+      await vi.advanceTimersByTimeAsync(0);
+      expect(textarea.value).toBe('Mine');
+      expect(shown()).toBe('MINE');
+      expect(document.querySelector('[data-posted] time')).not.toBeNull();
+    });
   });
 
   it('keeps what it drew when the network is away', async () => {

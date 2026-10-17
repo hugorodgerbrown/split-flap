@@ -165,8 +165,7 @@
       <li class="item">
         <a class="item__main" href="#ds-lists"><span class="item__title">An item that opens a page</span><span class="meta">Its meta line is cut to one line, however long it runs</span></a>
         <div class="item__actions">
-          <button class="icon-button" type="button" aria-label="Move up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button>
-          <button class="icon-button" type="button" aria-label="Move down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+          <a class="icon-button" href="#ds-lists" aria-label="Delete…"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></a>
         </div>
       </li>
     </ul>
@@ -205,17 +204,21 @@
       </span>
     </div>
     <a class="back-link" href="#ds-boards"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>A back link</a>
-    <nav class="segmented" aria-label="A segmented choice">
-      <a class="segmented__option" href="#ds-boards" aria-current="true">Home</a>
-      <a class="segmented__option" href="#ds-boards">News</a>
-      <a class="segmented__option" href="#ds-boards">Weather</a>
-    </nav>
+    <div class="control-strip">
+      <button class="icon-button icon-button--round" type="button" aria-label="A round icon button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/></svg></button>
+      <p class="meta control-strip__status">A control strip: what it's about, then its controls</p>
+      <button class="switch" type="button" role="switch" aria-checked="true" aria-label="A switch in the strip"><span class="switch__track" aria-hidden="true"></span><span class="switch__state" aria-hidden="true">On</span></button>
+    </div>
+    <ol class="item-list">
+      <li class="item"><a class="item__main item__title" href="#ds-boards" aria-current="page">A list item, the current one</a></li>
+      <li class="item"><a class="item__main item__title" href="#ds-boards">A list item to switch to</a></li>
+    </ol>
     <div class="split">
       <p class="notice">Split: the main column</p>
-      <p class="notice">and the one beside it, on a wide screen</p>
+      <p class="notice split__side">The side column, beside the first two on a wide screen</p>
+      <p class="notice">The main column, second</p>
     </div>
-    <details class="editor" open>
-      <summary class="editor__toggle">The edit panel <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></summary>
+    <div class="card">
       <div class="editor__body">
         <div class="editor__text">
           <label class="field"><span class="field__label">Message</span><textarea rows="3">Good morning</textarea></label>
@@ -235,7 +238,7 @@
         <button class="button button--secondary" type="button">Clear the board</button>
         <button class="button" type="button">Save</button>
       </div>
-    </details>
+    </div>
   </section>
 
   <section class="card stack" aria-labelledby="ds-pages">

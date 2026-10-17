@@ -20,9 +20,7 @@ from apps.boards.services import (
     delete_board,
     display_for,
     find_board,
-    move_board,
     post_message,
-    rename_board,
     replay,
     set_sound,
     set_sound_delay,
@@ -129,11 +127,9 @@ def test_check_name_refuses(user: Any, name: str, error: str) -> None:
         check_name(display_for(user), name)
 
 
-def test_check_name_tidies_spaces_and_lets_a_board_keep_its_name(user: Any) -> None:
-    """Runs of spaces become one, and a board being renamed doesn't clash with itself."""
-    display = display_for(user)
-    assert check_name(display, "  Morning   news ") == "Morning news"
-    assert check_name(display, "home", display.boards.get()) == "home"
+def test_check_name_tidies_spaces(user: Any) -> None:
+    """Runs of spaces become one."""
+    assert check_name(display_for(user), "  Morning   news ") == "Morning news"
 
 
 def test_add_board_goes_on_the_end(user: Any) -> None:
@@ -141,24 +137,6 @@ def test_add_board_goes_on_the_end(user: Any) -> None:
     display = display_for(user)
     BoardFactory.create(display=display, name="Far", position=7)
     assert add_board(display, "News").position == 8
-
-
-def test_rename_board(user: Any) -> None:
-    """Renaming saves the tidied name."""
-    board = rename_board(display_for(user).boards.get(), " Kitchen ")
-    board.refresh_from_db()
-    assert board.name == "Kitchen"
-
-
-def test_move_board_renumbers_ties(user: Any) -> None:
-    """Boards sharing a position are numbered afresh, so a move always moves."""
-    display = display_for(user)
-    news = BoardFactory.create(display=display, name="News", position=0)
-    move_board(news, -1)
-    assert [(b.name, b.position) for b in Board.objects.filter(display=display)] == [
-        ("News", 0),
-        ("Home", 1),
-    ]
 
 
 def test_delete_board_keeps_the_last(user: Any) -> None:
@@ -172,7 +150,7 @@ def test_delete_board_keeps_the_last(user: Any) -> None:
 
 
 def test_board_changes_lock_the_display(user: Any, monkeypatch: Any) -> None:
-    """Adding, moving and deleting lock the display, so two at once can't break a limit."""
+    """Adding and deleting lock the display, so two at once can't break a limit."""
     display = display_for(user)
     locked = []
     real = Display.objects.select_for_update
@@ -183,9 +161,8 @@ def test_board_changes_lock_the_display(user: Any, monkeypatch: Any) -> None:
 
     monkeypatch.setattr(Display.objects, "select_for_update", spy)
     news = add_board(display, "News")
-    move_board(news, -1)
     delete_board(news)
-    assert len(locked) == 3
+    assert len(locked) == 2
 
 
 def test_state_version_changes_with_content(user: Any) -> None:

@@ -57,8 +57,6 @@ def test_state_query_count_is_small(
     [
         ("boards:board", "get"),
         ("boards:message", "post"),
-        ("boards:rename", "post"),
-        ("boards:move", "post"),
         ("boards:delete", "get"),
         ("boards:delete", "post"),
     ],
@@ -77,8 +75,6 @@ def test_board_pages_need_sign_in(client: Client, user: Any, name: str, method: 
     [
         ("boards:board", "get"),
         ("boards:message", "post"),
-        ("boards:rename", "post"),
-        ("boards:move", "post"),
         ("boards:delete", "get"),
         ("boards:delete", "post"),
     ],
@@ -112,8 +108,7 @@ def test_manage_shows_the_links_preview_and_boards(signed_in: Client, user: Any)
     assert content.index("Home") < content.index("Weather")
     assert 'aria-label="Home: Hello :sun:"' in content
     assert "pictograms.svg#sun" in content
-    assert 'aria-label="Move Home up" disabled' in content
-    assert 'aria-label="Move Weather down" disabled' in content
+    assert 'aria-label="Delete Weather…"' in content
 
 
 def test_manage_tells_the_preview_when_its_board_was_posted(
@@ -149,12 +144,12 @@ def test_manage_query_count_is_small(
         signed_in.get(reverse("boards:manage"))
 
 
-def test_add_board_opens_its_page(signed_in: Client, user: Any) -> None:
-    """A new board goes on the end of the display, and you land on its page."""
+def test_add_board_selects_it(signed_in: Client, user: Any) -> None:
+    """A new board goes on the end of the display, and the display page opens on it."""
     response = signed_in.post(reverse("boards:add"), {"name": "  News  "})
     board = display_for(user).boards.get(name="News")
     assert response.status_code == 302
-    assert response["Location"] == reverse("boards:board", args=[board.uuid])
+    assert response["Location"] == f"{reverse('boards:manage')}?board={board.uuid}"
     assert [b.name for b in display_for(user).boards.all()] == ["Home", "News"]
 
 
@@ -182,16 +177,36 @@ def test_add_board_stops_at_the_limit(signed_in: Client, user: Any) -> None:
     assert display_for(user).boards.count() == MAX_BOARDS
 
 
-def test_board_page_draws_the_board_and_its_forms(signed_in: Client, user: Any) -> None:
-    """A board's page shows what it shows, its message to edit, and the palette."""
+def test_manage_draws_the_selected_board_and_its_editor(signed_in: Client, user: Any) -> None:
+    """The display page shows the board, its message to edit, the palette and when it was posted."""
     board = post_message(display_for(user), "{r} Hello")
-    content = signed_in.get(reverse("boards:board", args=[board.uuid])).content.decode()
+    BoardFactory.create(display=display_for(user), name="Weather", position=1)
+    content = signed_in.get(reverse("boards:manage")).content.decode()
     assert '<span class="face colour t-r">' in content
     assert '<span class="flap colour t-v">' in content
     assert "{r} Hello</textarea>" in content
+    assert f'action="{reverse("boards:message", args=[board.uuid])}"' in content
+    assert f'href="{reverse("boards:delete", args=[board.uuid])}"' in content
     assert 'data-insert="{v}"' in content
     assert 'data-insert=":partcloud:" aria-label="Sun and cloud"' in content
     assert "Posted <time" in content
+
+
+def test_manage_names_the_selected_board_once(signed_in: Client, user: Any) -> None:
+    """The list marks the selected board; the strip and editor don't repeat its name."""
+    weather = BoardFactory.create(display=display_for(user), name="Weather", position=1)
+    content = signed_in.get(reverse("boards:manage"), {"board": str(weather.uuid)}).content.decode()
+    assert f'href="?board={weather.uuid}" aria-current="page">Weather</a>' in content
+    assert content.count(">Weather<") == 2  # the list, and the board's own engraving
+    assert "Rename" not in content
+
+
+def test_old_board_page_goes_to_the_display_page(signed_in: Client, user: Any) -> None:
+    """A board's old address opens the display page on that board."""
+    board = display_for(user).boards.get()
+    response = signed_in.get(reverse("boards:board", args=[board.uuid]))
+    assert response.status_code == 302
+    assert response["Location"] == f"{reverse('boards:manage')}?board={board.uuid}"
 
 
 def test_message_saves_and_returns_to_the_board(signed_in: Client, user: Any) -> None:
@@ -199,7 +214,7 @@ def test_message_saves_and_returns_to_the_board(signed_in: Client, user: Any) ->
     board = display_for(user).boards.get()
     response = signed_in.post(reverse("boards:message", args=[board.uuid]), {"text": "Sunny"})
     assert response.status_code == 302
-    assert response["Location"] == reverse("boards:board", args=[board.uuid])
+    assert response["Location"] == f"{reverse('boards:manage')}?board={board.uuid}"
     board.refresh_from_db()
     assert board.message == "Sunny"
 
@@ -224,44 +239,6 @@ def test_message_that_wont_fit_is_refused(signed_in: Client, user: Any) -> None:
     assert "row\nrow" in response.content.decode()
     board.refresh_from_db()
     assert board.message == ""
-
-
-def test_rename_board(signed_in: Client, user: Any) -> None:
-    """A board takes a new name, and may change only its case."""
-    board = display_for(user).boards.get()
-    signed_in.post(reverse("boards:rename", args=[board.uuid]), {"name": "HOME"})
-    board.refresh_from_db()
-    assert board.name == "HOME"
-
-
-def test_rename_refuses_a_taken_name(signed_in: Client, user: Any) -> None:
-    """Two boards on a display can't share a name."""
-    board = BoardFactory.create(display=display_for(user), name="News", position=1)
-    response = signed_in.post(reverse("boards:rename", args=[board.uuid]), {"name": "home"})
-    assert response.status_code == 400
-    assert "already a board called home" in response.content.decode()
-    board.refresh_from_db()
-    assert board.name == "News"
-
-
-def test_move_board_up_and_down(signed_in: Client, user: Any) -> None:
-    """Moving a board swaps it with its neighbour, and a move past the end does nothing."""
-    display = display_for(user)
-    news = BoardFactory.create(display=display, name="News", position=1)
-    url = reverse("boards:move", args=[news.uuid])
-
-    def names() -> list[str]:
-        return [b.name for b in display_for(user).boards.all()]
-
-    response = signed_in.post(url, {"direction": "up"})
-    assert response["Location"] == reverse("boards:manage") + "#boards"
-    assert names() == ["News", "Home"]
-    signed_in.post(url, {"direction": "up"})
-    assert names() == ["News", "Home"]
-    signed_in.post(url, {"direction": "down"})
-    assert names() == ["Home", "News"]
-    signed_in.post(url, {"direction": "sideways"})
-    assert names() == ["Home", "News"]
 
 
 def test_delete_asks_first(signed_in: Client, user: Any) -> None:

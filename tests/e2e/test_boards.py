@@ -1,4 +1,4 @@
-"""Add a board, post to it from its page, then delete it.
+"""Add a board, post to it from the display page, then delete it.
 
 Scenario: boards (docs/testing.md, "Journeys").
 """
@@ -9,12 +9,14 @@ from playwright.sync_api import Page, expect
 
 
 def test_add_post_and_delete_a_board(signed_in_page: Page, live_server: Any) -> None:
-    """The board page's preview follows the message box, and Save puts it on the display."""
+    """The preview follows the message box, and Save puts it on the display."""
     page = signed_in_page
     page.goto(f"{live_server.url}/app/display/")
     page.get_by_label("New board").fill("News")
     page.get_by_role("button", name="Add board").click()
-    expect(page.get_by_role("heading", name="News", level=1)).to_be_visible()
+    expect(page.get_by_role("link", name="News", exact=True)).to_have_attribute(
+        "aria-current", "page"
+    )
 
     save = page.get_by_role("button", name="Save")
     expect(save).to_be_disabled()
@@ -28,7 +30,7 @@ def test_add_post_and_delete_a_board(signed_in_page: Page, live_server: Any) -> 
 
     expect(page.get_by_text("On the display", exact=True)).to_be_visible()
     expect(page.get_by_text("Posted")).to_be_visible()
-    page.get_by_role("link", name="Delete board…").click()
+    page.get_by_role("link", name="Delete News…").click()
     page.get_by_role("button", name="Delete board").click()
-    expect(page.get_by_role("link", name="News")).to_have_count(0)
-    expect(page.get_by_role("link", name="Home")).to_be_visible()
+    expect(page.get_by_role("link", name="News", exact=True)).to_have_count(0)
+    expect(page.get_by_role("link", name="Home", exact=True)).to_be_visible()
