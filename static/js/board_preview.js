@@ -1,14 +1,10 @@
 /*
- * static/js/board_preview.js — the board drawn still on the app's pages, kept up to date.
+ * static/js/board_preview.js — the display page's preview, kept up to date.
  *
- * The server draws each board as it stands (boards/_flapboard.html), so the
- * page works without this file. With it:
- *
- * - the preview follows the editor as you type, says "Draft" until saved,
- *   counts the rows, and keeps Save off until a change fits;
- * - each palette key adds its code at the cursor;
- * - a Routine's post appears without a reload, in the editor too unless
- *   you're mid-draft. Layout comes from flaptext.js.
+ * The server draws the board (boards/_flapboard.html). With this file the
+ * preview follows the editor ("Draft", row counts, Save only for a change
+ * that fits), palette keys type their code, and a Routine's post appears
+ * live. board_motion.js makes it flip.
  */
 (function () {
   'use strict';
@@ -52,6 +48,9 @@
   // Draw ``text`` on a board, as the display would show it.
   function draw(board, name, text) {
     const { COLS, parse, message } = self.FlapText;
+    board.dataset.text = text;
+    board.setAttribute('aria-label', name + ': ' + text);
+    if (board.motion) return board.motion.snap(message(text));
     const tiles = [];
     message(text).forEach(function (line) {
       const symbols = parse(line).slice(0, COLS);
@@ -61,7 +60,6 @@
       });
     });
     board.querySelector('[data-flapboard-grid]').replaceChildren(...tiles);
-    board.setAttribute('aria-label', name + ': ' + text);
   }
 
   // How many rows a message fills, and whether that's more than the board has.
@@ -127,7 +125,7 @@
     line.replaceChildren('Posted ', time);
   }
 
-  // Keep the display page's preview on what the server says the board shows.
+  // Keep the preview on what the server says the board shows.
   function live(status) {
     const board = document.getElementById(status.dataset.preview);
     const name = status.dataset.liveBoard;
@@ -135,13 +133,16 @@
     let shown = status.dataset.postedAt || null;  // posted_at as the server drew it
     const form = document.querySelector('form[data-board-editor][data-preview="' + status.dataset.preview + '"]');
 
-    // Show a new post; an editor on this board takes it too, but keeps a draft in the box.
+    // Show a new post, in the editor too unless it holds a draft.
     function follow(text) {
       if (!form) { draw(board, name, text || name); return; }
       const textarea = form.querySelector('textarea');
-      if (textarea.value.trim() === form.dataset.saved.trim()) textarea.value = text;
+      const from = board.dataset.text;
+      const draft = textarea.value.trim() !== form.dataset.saved.trim();
+      if (!draft) textarea.value = text;
       form.dataset.saved = text;
       textarea.dispatchEvent(new Event('input', { bubbles: true }));
+      if (!draft) board.dispatchEvent(new CustomEvent('board:post', { bubbles: true, detail: { from, to: board.dataset.text } }));
     }
 
     async function poll() {

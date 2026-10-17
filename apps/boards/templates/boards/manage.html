@@ -7,6 +7,8 @@
   <script src="{% static 'js/copy.js' %}" defer></script>
   <script src="{% static 'js/flaptext.js' %}" defer></script>
   <script src="{% static 'js/board_preview.js' %}" defer></script>
+  <script src="{% static 'js/flapmotion.js' %}" defer></script>
+  <script src="{% static 'js/board_motion.js' %}" defer></script>
 {% endblock %}
 {% block content %}
   <h1 class="eyebrow">Your display</h1>
@@ -66,7 +68,7 @@
     </section>
 
     <div class="stack">
-      <form class="card" id="editor" method="post" action="{% url 'boards:message' board.uuid %}" data-board-editor data-preview="display-preview" data-name="{{ board.name }}" data-saved="{{ board.message }}" data-max-length="{{ max_message_length }}">
+      <form class="card" id="editor" method="post" action="{% url 'boards:message' board.uuid %}" hx-post="{% url 'boards:message' board.uuid %}" hx-target="#board-view" hx-select="#board-view" hx-select-oob="#editor,#boards" hx-swap="outerHTML show:none" data-board-editor data-preview="display-preview" data-name="{{ board.name }}" data-saved="{{ board.message }}" data-max-length="{{ max_message_length }}">
         {% csrf_token %}
         <div class="editor__body">
           <div class="editor__text">

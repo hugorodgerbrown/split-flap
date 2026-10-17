@@ -24,7 +24,7 @@ def test_add_post_and_delete_a_board(signed_in_page: Page, live_server: Any) -> 
     page.get_by_role("button", name="Train").click()
     preview = page.get_by_role("img", name="News: Rail strike off :train:")
     expect(preview).to_be_visible()
-    expect(preview.locator("use")).to_have_count(2)  # the pictogram, on both halves of its flap
+    expect(preview.locator(".face.icon").first).to_be_visible()  # the pictogram, on its flap
     expect(page.get_by_text("Draft", exact=True)).to_be_visible()
     save.click()
 

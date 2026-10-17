@@ -405,6 +405,19 @@ def test_picking_a_board_swaps_it_in_place(signed_in: Client) -> None:
         assert region in content
 
 
+def test_save_flips_the_preview_in_place(signed_in: Client, user: Any) -> None:
+    """With htmx, Save swaps the board in place, and the page loads the motion that flips it."""
+    board = display_for(user).boards.get()
+    content = signed_in.get(reverse("boards:manage")).content.decode()
+    assert (
+        f'hx-post="{reverse("boards:message", args=[board.uuid])}" hx-target="#board-view"'
+        in content
+    )
+    assert "js/flapmotion" in content
+    assert "js/board_motion" in content
+    assert 'data-name="Home" data-text="Home"' in content
+
+
 def test_display_controls_update_in_place(signed_in: Client, user: Any) -> None:
     """With htmx, each control posts and swaps its own card, so the page doesn't jump."""
     set_sound(display_for(user), True)
