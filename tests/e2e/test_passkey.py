@@ -35,5 +35,5 @@ def test_added_passkey_signs_back_in(signed_in_page: Page, live_server: Any) -> 
     page.wait_for_url(f"{live_server.url}/")
     page.goto(f"{live_server.url}/signin/")
     page.get_by_role("button", name="Sign in with a passkey").click()
-    page.wait_for_url("**/app/")
-    expect(page.get_by_role("heading", name="Notes")).to_be_visible()
+    page.wait_for_url("**/app/display/")
+    expect(page.get_by_text("Open this address on your TV")).to_be_visible()

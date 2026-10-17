@@ -184,7 +184,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # outside the admin's own (unused) form. See docs/accounts.md.
 AUTH_USER_MODEL = "accounts.User"
 LOGIN_URL = "accounts:sign_in"
-LOGIN_REDIRECT_URL = "notes:list"
+LOGIN_REDIRECT_URL = "boards:manage"
 LOGOUT_REDIRECT_URL = "public:home"
 # An installed app should not sign people out while they are offline.
 SESSION_COOKIE_AGE = 60 * 60 * 24 * 90

@@ -37,7 +37,9 @@ def signed_in_page(page: Page, live_server: Any, mailoutbox: list[Any], settings
     assert link, mailoutbox[-1].body
     page.goto(live_server.url + urlsplit(link.group()).path)
     page.get_by_role("button", name="Continue").click()
-    page.wait_for_url("**/app/")
+    # Every sign-in lands on the display page; the journeys start at the notes.
+    page.wait_for_url("**/app/display/")
+    page.goto(f"{live_server.url}/app/")
     # The first load installs the worker; it takes control without a reload.
     # (evaluate, not wait_for_function: the page's CSP forbids the eval the latter uses.)
     page.evaluate(

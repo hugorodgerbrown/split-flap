@@ -5,9 +5,8 @@ import re
 import pytest
 from django.test import Client
 from django.urls import reverse
-from django.utils import timezone
-from django.utils.html import escape
 
+from apps.boards.layout import COLS, ROWS
 from apps.public import views
 from apps.pwa import conf
 
@@ -54,7 +53,7 @@ def without_mcp(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def primary_actions(content: str) -> list[tuple[str, str]]:
     """The front page's primary actions, as (href, label): the block buttons."""
-    pattern = r'<a class="button button--block" href="([^"]*)">([^<]*)</a>'
+    pattern = r'<a class="button button--block[^"]*" href="([^"]*)">([^<]*)</a>'
     return [(match[1], match[2]) for match in re.finditer(pattern, content)]
 
 
@@ -70,7 +69,7 @@ def test_home_has_one_promise(client: Client) -> None:
 def test_home_offers_one_way_in(client: Client) -> None:
     """Signed out, both primary actions go to sign in, onwards to the first job."""
     content = client.get(reverse("public:home")).content.decode()
-    first_job = f"{reverse('accounts:sign_in')}?next={reverse('notes:list')}"
+    first_job = f"{reverse('accounts:sign_in')}?next={reverse('boards:manage')}"
     actions = primary_actions(content)
     assert len(actions) == 2
     assert {href for href, _label in actions} == {first_job}
@@ -82,27 +81,22 @@ def test_home_opens_the_app_when_signed_in(signed_in: Client) -> None:
     """Signed in, the header and both primary actions open the app instead."""
     content = signed_in.get(reverse("public:home")).content.decode()
     actions = primary_actions(content)
-    assert actions == [(reverse("notes:list"), "Open the app")] * 2
+    assert actions == [(reverse("boards:manage"), "Open the app")] * 2
     header = content[content.index("<header") : content.index("</header>")]
     assert "Open the app" in header
     assert "Sign in" not in content
 
 
-def test_home_shows_the_product_with_demo_data(client: Client) -> None:
-    """The app's own note list, drawn with demo notes, not a picture of it."""
+def test_home_shows_the_board_itself(client: Client) -> None:
+    """The real board (board.css), drawn by the server with the first demo board."""
     content = client.get(reverse("public:home")).content.decode()
-    assert 'class="showcase"' in content
-    assert 'class="note-list"' in content
-    for text, _minutes in views.DEMO_NOTES:
-        assert escape(text) in content
-
-
-def test_demo_notes_are_recent() -> None:
-    """Written minutes before now, so the demo never looks stale."""
-    notes = views.demo_notes()
-    assert len(notes) == len(views.DEMO_NOTES)
-    assert all(note["written_at"] <= timezone.now() for note in notes)
-    assert all(note["written_at"].tzinfo is not None for note in notes)
+    assert "css/board.css" in content
+    assert "js/front_board.js" in content
+    assert 'class="board board--fluid"' in content
+    assert content.count('<div class="cell">') == COLS * ROWS
+    assert '<span class="face tile t-r">' in content
+    assert ">Morning<" in content
+    assert 'aria-label="Good morning bins go out tonight posted by claude 07:00"' in content
 
 
 def test_home_shows_the_connector(client: Client, with_mcp: str) -> None:

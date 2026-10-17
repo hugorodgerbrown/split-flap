@@ -1,18 +1,21 @@
 /*
- * static/css/board.css — the split-flap board the TV shows (/d/<uuid>/).
+ * static/css/board.css — the split-flap board itself: frame, flaps and tiles.
  *
  * Kept apart from app.css on purpose: the board draws a physical object
  * (flaps, tiles, a frame), not the app's interface, so its palette and
  * measurements are its own. docs/decisions/the-tv-board-has-its-own-stylesheet.md
+ * The TV's page around it is tv.css; the front page shows it too, as
+ * .board--fluid.
  */
 /* Barlow and Barlow Semi Condensed, self-hosted (SIL OFL, static/fonts/OFL.txt). */
 @font-face { font-family: "Barlow Semi Condensed"; font-weight: 600; font-display: swap; src: url("../fonts/barlow-semi-condensed-600-latin.woff2") format("woff2"); }
 @font-face { font-family: "Barlow"; font-weight: 500; font-display: swap; src: url("../fonts/barlow-500-latin.woff2") format("woff2"); }
 @font-face { font-family: "Barlow"; font-weight: 600; font-display: swap; src: url("../fonts/barlow-600-latin.woff2") format("woff2"); }
 
-/* Layout: one framed split-flap board centred on a dark wall, sized to the screen; a hidden control bar rises on input. */
+/* The board's palette and its measurements. The TV sizes it to the screen
+   (splitflap.js sets --cw and the rest on <html>); .board--fluid sizes it
+   to its container instead. */
 :root {
-  --wall: #070707;
   --frame-hi: #1c1b1a;
   --frame-lo: #0e0e0d;
   --well: #090909;
@@ -23,29 +26,11 @@
   --ink: #eeeae1;
   --engrave: #4b4841;
   --led-on: #f3ead2;
-  --ui-bg: rgba(22, 22, 21, 0.9);
-  --ui-line: #34322e;
-  --ui-fg: #eeeae1;
-  --ui-dim: #8f8a7f;
-  --ui-accent: #f5c22b;
   --tile-r: #d8372f; --tile-o: #ee7a1f; --tile-y: #f5c22b; --tile-g: #2f9d5b;
   --tile-b: #2069cf; --tile-v: #7a4bc8; --tile-w: #ece9e1;
   --font-flap: "Barlow Semi Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
   --font-ui: "Barlow", "Helvetica Neue", Arial, sans-serif;
-  color-scheme: dark;
   --cw: 40px; --ch: 55px; --gx: 5px; --gy: 6px; --pad: 34px; --fs: 34px; --r: 3px;
-}
-[hidden] { display: none !important; }
-html, body { height: 100%; }
-body { margin: 0; background: var(--wall); color: var(--ui-fg); overflow: hidden; font-family: var(--font-ui); }
-body.idle { cursor: none; }
-
-.stage {
-  height: 100%; box-sizing: border-box; display: grid; place-items: center;
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
-  padding-block: 16px;
-  background: radial-gradient(ellipse at 50% 42%, #141312 0%, var(--wall) 70%);
 }
 
 /* The physical board */
@@ -139,38 +124,16 @@ body.idle { cursor: none; }
   background: linear-gradient(90deg, #050505 0 7%, transparent 7% 93%, #050505 93%);
 }
 
-/* Control bar */
-.hud {
-  position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px));
-  transform: translateX(-50%);
-  display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: center;
-  width: max-content; max-width: calc(100% - 32px); box-sizing: border-box;
-  padding: 6px; border-radius: 14px;
-  background: var(--ui-bg); border: 1px solid var(--ui-line);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
-  transition: opacity .35s, transform .35s;
-  z-index: 20;
-}
-.idle .hud { opacity: 0; transform: translateX(-50%) translateY(10px); pointer-events: none; }
-.tabs { display: flex; gap: 2px; padding: 2px; background: #0d0d0c; border-radius: 10px; }
-.hud button {
-  font: 500 15px/1 var(--font-ui); color: var(--ui-dim);
-  background: transparent; border: 0; border-radius: 8px;
-  padding: 10px 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 7px;
-  transition: color .15s, background .15s;
-}
-.hud button:hover { color: var(--ui-fg); background: rgba(255,255,255,.05); }
-.hud button:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 1px; }
-.tabs button[aria-selected="true"], .tabs button[aria-pressed="true"] { color: #141414; background: var(--ui-fg); }
-.hud button[aria-pressed="true"] { color: var(--ui-fg); }
-.hud button[aria-pressed="true"] .dot { background: var(--ui-accent); box-shadow: 0 0 8px rgba(245,194,43,.6); }
-.dot { width: 7px; height: 7px; border-radius: 50%; background: #3d3b36; }
-.sep { width: 1px; align-self: stretch; margin: 6px 2px; background: var(--ui-line); }
-.hud svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.tag { font: 600 11px/1 var(--font-ui); letter-spacing: .14em; text-transform: uppercase; color: var(--ui-dim); padding: 0 10px; }
-
-@media (max-width: 640px) {
-  .hud button { padding: 9px 10px; font-size: 14px; }
-  .hud .label-opt, .tag { display: none; }
+/* The board at the width of its container (.board-fit), however wide that
+   is: 22 columns of flaps and their gaps, plus the frame either side. */
+.board-fit { container-type: inline-size; }
+.board--fluid {
+  --cols: 22;
+  --cw: calc(100cqw / 26.22);
+  --ch: calc(var(--cw) * 1.38);
+  --gx: calc(var(--cw) * 0.12);
+  --gy: calc(var(--cw) * 0.16);
+  --pad: calc(var(--cw) * 0.85);
+  --fs: calc(var(--ch) * 0.66);
+  --r: max(1px, calc(var(--cw) * 0.07));
 }

@@ -148,7 +148,7 @@ def test_next_from_elsewhere_is_ignored(client: Client) -> None:
     """A next pointing off-site lands on the app instead."""
     request_email(client, next_url="https://evil.example/")
     link, _ = emailed()
-    assert client.post(link)["Location"] == reverse("notes:list")
+    assert client.post(link)["Location"] == reverse("boards:manage")
 
 
 def test_a_first_sign_in_is_marked_as_a_sign_up(client: Client, settings: Any) -> None:
@@ -156,19 +156,19 @@ def test_a_first_sign_in_is_marked_as_a_sign_up(client: Client, settings: Any) -
     settings.FIVEBAR_DOMAIN = "example.ultraniche.ai"
     request_email(client)
     _, code = emailed()
-    assert client.post(CODE, {"code": code})["Location"] == reverse("notes:list") + "#signed-up"
+    assert client.post(CODE, {"code": code})["Location"] == reverse("boards:manage") + "#signed-up"
 
     again = Client()
     request_email(again)
     _, code = emailed()
-    assert again.post(CODE, {"code": code})["Location"] == reverse("notes:list")
+    assert again.post(CODE, {"code": code})["Location"] == reverse("boards:manage")
 
 
 def test_no_sign_up_mark_while_fivebar_is_off(client: Client) -> None:
     """Off, a new account's redirect is unchanged."""
     request_email(client)
     link, _ = emailed()
-    assert client.post(link)["Location"] == reverse("notes:list")
+    assert client.post(link)["Location"] == reverse("boards:manage")
 
 
 # ---------- the code ----------
@@ -179,7 +179,7 @@ def test_code_signs_in_this_browser(client: Client) -> None:
     request_email(client)
     _, code = emailed()
     response = client.post(CODE, {"code": code})
-    assert response["Location"] == reverse("notes:list")
+    assert response["Location"] == reverse("boards:manage")
     assert signed_in_user(client) is not None
     assert SignInRequest.objects.get().used_at is not None
 
