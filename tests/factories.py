@@ -15,7 +15,7 @@ from apps.accounts.models import (
     mask_email,
     username_for,
 )
-from apps.boards.models import Board, BoardKind, Display
+from apps.boards.models import Board, Display
 from apps.notes.models import Note
 
 
@@ -110,7 +110,7 @@ class DisplayFactory(factory.django.DjangoModelFactory):
 
 
 class BoardFactory(factory.django.DjangoModelFactory):
-    """A Custom board on a new display."""
+    """A named board on a new display."""
 
     class Meta:
         """Factory metadata."""
@@ -118,4 +118,4 @@ class BoardFactory(factory.django.DjangoModelFactory):
         model = Board
 
     display = factory.SubFactory(DisplayFactory)
-    kind = BoardKind.CUSTOM
+    name = factory.Sequence(lambda n: f"Board {n}")

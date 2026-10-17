@@ -10,7 +10,7 @@ class BoardInline(admin.TabularInline):
 
     model = Board
     extra = 0
-    fields = ("kind", "position", "message", "posted_at")
+    fields = ("name", "position", "message", "posted_at")
     readonly_fields = ("posted_at",)
 
 

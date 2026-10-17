@@ -79,7 +79,8 @@ def _manage(
 @login_required
 def display_manage(request: HttpRequest) -> HttpResponse:
     """The signed-in page: the TV's link and a form to post to a board."""
-    return _manage(request, display_for(signed_in_user(request)), PostMessageForm())
+    display = display_for(signed_in_user(request))
+    return _manage(request, display, PostMessageForm(display))
 
 
 @require_POST
@@ -87,8 +88,8 @@ def display_manage(request: HttpRequest) -> HttpResponse:
 def display_post(request: HttpRequest) -> HttpResponse:
     """Post a message to one of the signed-in user's boards."""
     display = display_for(signed_in_user(request))
-    form = PostMessageForm(request.POST)
+    form = PostMessageForm(display, request.POST)
     if not form.is_valid():
         return _manage(request, display, form, status=400)
-    post_message(display, form.cleaned_data["text"], form.cleaned_data["kind"])
+    post_message(display, form.cleaned_data["text"], form.cleaned_data["board"])
     return redirect("boards:manage")

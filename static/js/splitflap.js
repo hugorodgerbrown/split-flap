@@ -4,8 +4,7 @@
  * Draws a 22x6 grid of flap modules that turn through a fixed drum of
  * characters, colour tiles and pictograms to reach each new message. It
  * polls the display's state (data-state-url) and flips only the tiles that
- * change. A board with no posted message draws its own content: a greeting
- * on Custom, sample content on the others until their feeds arrive.
+ * change. Boards show only what they're given: an empty board shows its name.
  */
 (() => {
   const COLS = 22, ROWS = 6;
@@ -83,7 +82,6 @@
   const len = s => parse(s).length;
   const pad = n => ' '.repeat(Math.max(0, n));
   const center = s => pad(Math.floor((COLS - len(s)) / 2)) + s;
-  const spread = (a, b) => a + pad(COLS - len(a) - len(b)) + b;
   function wrap(text, width = COLS) {
     const lines = [];
     for (const para of String(text).split(/\n/)) {
@@ -105,75 +103,12 @@
     return Array.from({ length: ROWS }, (_, r) => center(lines[r - top] ?? ''));
   }
 
-  const now = () => new Date();
-  const hhmm = d => d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-  const dayDate = d => d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }).replace(',', '');
-  const STRIPE = Array.from({ length: COLS }, (_, i) => `{${'roygbv'[i % 6]}}`).join('');
-
-  // ---- Boards (sample content until the live feeds are wired up) ----
-  // What the server says each board shows, keyed by kind; filled by poll().
+  // ---- Boards: whatever the server says each one shows, filled by poll() ----
   const root = document.getElementById('board');
-  const posted = {};
+  let BOARDS = [];
 
-  function greeting() {
-    const h = now().getHours();
-    return h < 12 ? 'GOOD MORNING' : h < 18 ? 'GOOD AFTERNOON' : 'GOOD EVENING';
-  }
-
-  const HEADLINES = [
-    'YOUR SPLIT FLAP BOARD IS NOW LIVE ON THE TV',
-    'MESSAGES FROM CLAUDE ARRIVE OVER MCP NEXT',
-    'LIVE NEWS WEATHER AND TRAVEL FEEDS TO FOLLOW',
-    'PRESS ← OR → TO SWITCH BOARDS',
-    'NOW WITH EMOJI ☀ 🚆 ❤ ★ ☕',
-  ];
-
-  const DESTS = [
-    ['CAMBRIDGE', '9', 'g'], ['YORK', '4', 'g'], ['LEEDS', '1', 'y'], ['EDINBURGH', '2', 'g'],
-    ['ELY', '10', 'g'], ['NEWCASTLE', '3', 'r'], ['PETERBORO', '6', 'g'], ['DONCASTER', '5', 'y'],
-  ];
-  const SLOTS = [4, 15, 22, 30, 45, 52];
-  function departures(count) {
-    const t = now();
-    const out = [];
-    const base = new Date(t); base.setMinutes(0, 0, 0);
-    for (let h = 0; out.length < count && h < 3; h++) {
-      for (let k = 0; k < SLOTS.length && out.length < count; k++) {
-        const d = new Date(base.getTime() + h * 3600e3 + SLOTS[k] * 60e3);
-        if (d <= t) continue;
-        const [dest, plat, status] = DESTS[(d.getHours() * SLOTS.length + k) % DESTS.length];
-        out.push({ time: hhmm(d), dest, plat, status });
-      }
-    }
-    return out;
-  }
-
-  const BOARDS = [
-    { kind: 'custom', name: 'Custom', render: () => [
-        '', center(greeting()), center('❤ HUGO ❤'), '', center('THIS BOARD IS ALL YOURS'), STRIPE] },
-    { kind: 'news', name: 'News', render: () => {
-        const i = Math.floor(Date.now() / 12000) % HEADLINES.length;
-        const body = wrap(HEADLINES[i]).slice(0, 3);
-        while (body.length < 3) body.push('');
-        return [spread('📰 TOP STORIES', hhmm(now())), '', ...body, spread('', `${i + 1}/${HEADLINES.length}`)];
-      } },
-    { kind: 'weather', name: 'Weather', render: () => [
-        spread('LONDON', dayDate(now()).toUpperCase()),
-        '',
-        spread('⛅ NOW 14°', 'PART CLOUDY'),
-        spread('↑ HIGH 16°', '↓ LOW 9°'),
-        spread('🌧 RAIN AFTER 3PM', '☂'),
-        spread('WIND SW 12MPH', 'UV 2'),
-      ] },
-    { kind: 'travel', name: 'Travel', render: () => {
-        const rows = departures(4).map(d =>
-          (d.time + ' ' + d.dest).padEnd(16) + ('P' + d.plat).padEnd(5) + `{${d.status}}`);
-        return [spread('🚆 KINGS CROSS', hhmm(now())), ...rows, center('{g} ON TIME  {y} DELAYED')];
-      } },
-  ];
-
-  // A posted message wins; an empty board draws its own content.
-  const renderBoard = b => posted[b.kind] ? message(posted[b.kind]) : b.render();
+  // A posted message, or the board's name while it has none.
+  const renderBoard = b => message(b ? (b.message || b.name) : '');
 
   // ---- Flap cells ----
   const grid = document.getElementById('grid');
@@ -351,17 +286,28 @@
   const nameEl = document.getElementById('boardName');
   let active = 0, auto = true, lastSwitch = Date.now();
 
-  BOARDS.forEach((b, i) => {
-    const btn = document.createElement('button');
-    btn.type = 'button'; btn.role = 'tab'; btn.textContent = b.name;
-    btn.addEventListener('click', () => select(i));
-    tabs.appendChild(btn);
-    const led = document.createElement('span');
-    led.className = 'led';
-    leds.appendChild(led);
-  });
+  // Rebuild the tabs and lights when the boards (or their names or order) change.
+  function setBoards(boards) {
+    const names = boards.map(b => b.name).join('\n');
+    const changed = names !== BOARDS.map(b => b.name).join('\n');
+    BOARDS = boards;
+    if (!changed) return;
+    tabs.replaceChildren();
+    leds.replaceChildren();
+    BOARDS.forEach((b, i) => {
+      const btn = document.createElement('button');
+      btn.type = 'button'; btn.role = 'tab'; btn.textContent = b.name;
+      btn.addEventListener('click', () => select(i));
+      tabs.appendChild(btn);
+      const led = document.createElement('span');
+      led.className = 'led';
+      leds.appendChild(led);
+    });
+    select(Math.min(active, BOARDS.length - 1));
+  }
 
   function select(i) {
+    if (!BOARDS.length) return;
     active = (i + BOARDS.length) % BOARDS.length;
     lastSwitch = Date.now();
     [...tabs.children].forEach((t, j) => t.setAttribute('aria-selected', j === active));
@@ -458,11 +404,11 @@
       if (response.status === 200) {
         etag = response.headers.get('ETag');
         const state = await response.json();
-        state.boards.forEach(b => { posted[b.kind] = b.message; });
-        const newest = state.boards.reduce((a, b) => ((b.posted_at || '') > (a.posted_at || '') ? b : a));
+        setBoards(state.boards);
+        const newest = state.boards.reduce((a, b) => ((b.posted_at || '') > (a.posted_at || '') ? b : a), {});
         // Something new was posted since we last looked: turn to that board so it's seen.
         if (lastPosted !== null && newest.posted_at && newest.posted_at > lastPosted) {
-          select(BOARDS.findIndex(b => b.kind === newest.kind));
+          select(state.boards.indexOf(newest));
         }
         lastPosted = newest.posted_at || '';
         show(renderBoard(BOARDS[active]));
@@ -473,6 +419,6 @@
     setTimeout(poll, (+root.dataset.pollSeconds || 5) * 1000);
   }
 
-  const start = () => setTimeout(() => { select(0); poll(); }, 400);
+  const start = () => setTimeout(poll, 400);
   (document.fonts?.ready || Promise.resolve()).then(start, start);
 })();
