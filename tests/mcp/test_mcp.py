@@ -2,16 +2,16 @@
 
 import json
 import re
+from collections.abc import Iterator
 from typing import Any
 
 import pytest
 from django.test import Client
 from mcp_auth.testing import MCPAuthContract
 
-from apps.mcp.resources import MIME_TYPE, RESOURCES
-from apps.mcp.tools import TOOLS, ToolError, add_note, list_notes
-from apps.notes.models import Note
-from tests.factories import NoteFactory, UserFactory
+from apps.mcp.resources import MIME_TYPE, RESOURCES, UiResource
+from apps.mcp.tools import NO_ARGUMENTS, TOOLS, Tool, ToolError, list_boards, post_board_message
+from tests.factories import UserFactory
 
 
 class TestMCPAuth(MCPAuthContract):
@@ -47,12 +47,45 @@ def test_initialize_and_list_tools(rpc: Any) -> None:
     assert names == set(TOOLS)
 
 
-def test_add_then_list_notes(rpc: Any, user: Any) -> None:
-    """add_note writes as the user; list_notes reads it back."""
-    rpc("tools/call", {"name": "add_note", "arguments": {"text": "from Claude"}})
-    result = rpc("tools/call", {"name": "list_notes", "arguments": {}})
-    assert result["structuredContent"]["notes"][0]["text"] == "from Claude"
-    assert Note.objects.get().owner == user
+def test_post_then_get_board(rpc: Any) -> None:
+    """post_message writes to the user's board; get_board reads it back."""
+    rpc("tools/call", {"name": "post_message", "arguments": {"text": "from Claude"}})
+    result = rpc("tools/call", {"name": "get_board", "arguments": {}})
+    assert result["structuredContent"]["message"] == "from Claude"
+
+
+@pytest.fixture
+def view(tmp_path: Any, monkeypatch: Any) -> Iterator[UiResource]:
+    """A sample MCP App view and a tool that names it; the app ships none yet."""
+    from apps.mcp import resources
+
+    (tmp_path / "sample_view.html").write_text("<!doctype html>\n<body><p>Sample</p></body>")
+    (tmp_path / "sample_view.js").write_text("McpApp.onToolResult(() => {});")
+    (tmp_path / resources.BRIDGE).write_text((resources.UI_DIR / resources.BRIDGE).read_text())
+    monkeypatch.setattr(resources, "UI_DIR", tmp_path)
+    resources.render.cache_clear()
+    resource = UiResource(
+        uri="ui://sample/view",
+        name="sample_view",
+        title="Sample",
+        description="A view for the tests.",
+        html="sample_view.html",
+        scripts=("sample_view.js",),
+    )
+    monkeypatch.setitem(RESOURCES, resource.uri, resource)
+    monkeypatch.setitem(
+        TOOLS,
+        "sample",
+        Tool(
+            name="sample",
+            description="Lists the boards, with a view.",
+            input_schema=NO_ARGUMENTS,
+            func=list_boards,
+            ui=resource.uri,
+        ),
+    )
+    yield resource
+    resources.render.cache_clear()
 
 
 def test_initialize_advertises_resources(rpc: Any) -> None:
@@ -70,17 +103,24 @@ def test_resources_list_every_view(rpc: Any) -> None:
     assert rpc("resources/templates/list") == {"resourceTemplates": []}
 
 
-@pytest.mark.parametrize("tool", [t for t in TOOLS.values() if t.ui], ids=lambda t: t.name)
-def test_a_tool_ui_names_a_listed_resource(rpc: Any, tool: Any) -> None:
+def test_every_tool_ui_names_a_listed_resource(rpc: Any) -> None:
     """A tool's _meta points at a resource the server serves, in both key forms."""
-    described = next(t for t in rpc("tools/list")["tools"] if t["name"] == tool.name)
-    assert described["_meta"]["ui"]["resourceUri"] in RESOURCES
-    assert described["_meta"]["ui/resourceUri"] == described["_meta"]["ui"]["resourceUri"]
+    for tool in (t for t in TOOLS.values() if t.ui):
+        described = next(t for t in rpc("tools/list")["tools"] if t["name"] == tool.name)
+        assert described["_meta"]["ui"]["resourceUri"] in RESOURCES
+        assert described["_meta"]["ui/resourceUri"] == described["_meta"]["ui"]["resourceUri"]
 
 
-@pytest.mark.parametrize("uri", list(RESOURCES))
-def test_a_view_is_one_self_contained_document(rpc: Any, uri: str) -> None:
+def test_a_view_is_listed_and_named_by_its_tool(rpc: Any, view: UiResource) -> None:
+    """A registered view is listed, and its tool points at it."""
+    assert [r["uri"] for r in rpc("resources/list")["resources"]] == [view.uri]
+    described = next(t for t in rpc("tools/list")["tools"] if t["name"] == "sample")
+    assert described["_meta"]["ui"]["resourceUri"] == view.uri
+
+
+def test_every_view_is_one_self_contained_document(rpc: Any, view: UiResource) -> None:
     """The HTML loads nothing from anywhere: its scripts and styles are inline."""
+    uri = view.uri
     (content,) = rpc("resources/read", {"uri": uri})["contents"]
     assert content["uri"] == uri
     assert content["mimeType"] == MIME_TYPE
@@ -94,7 +134,7 @@ def test_a_view_is_one_self_contained_document(rpc: Any, uri: str) -> None:
 
 def test_tools_without_ui_have_no_meta(rpc: Any) -> None:
     """A plain tool describes itself as before."""
-    described = next(t for t in rpc("tools/list")["tools"] if t["name"] == "add_note")
+    described = next(t for t in rpc("tools/list")["tools"] if t["name"] == "post_message")
     assert "_meta" not in described
 
 
@@ -147,22 +187,15 @@ def test_public_pages_come_back_as_markdown(rpc: Any, tool: str, heading: str) -
 
 def test_tool_errors_are_readable(rpc: Any) -> None:
     """A bad argument is an isError result, not a protocol error."""
-    result = rpc("tools/call", {"name": "list_notes", "arguments": {"limit": 0}})
+    result = rpc("tools/call", {"name": "post_message", "arguments": {"text": 5}})
     assert result["isError"] is True
 
 
 @pytest.mark.django_db
-def test_list_notes_is_per_user() -> None:
-    """A user's tools never see another user's notes."""
-    NoteFactory.create(text="private")
-    assert list_notes(UserFactory.create(), {}) == {"notes": []}
-
-
-@pytest.mark.django_db
-def test_add_note_validates() -> None:
-    """Empty text is refused with a message the model can act on."""
-    with pytest.raises(ToolError):
-        add_note(UserFactory.create(), {"text": ""})
+def test_post_message_validates() -> None:
+    """Text that isn't a string is refused with a message the model can act on."""
+    with pytest.raises(ToolError, match="text must be a string"):
+        post_board_message(UserFactory.create(), {"text": 5})
 
 
 def call_endpoint(client: Client, body: Any, headers: dict[str, str] | None = None) -> Any:
@@ -190,7 +223,7 @@ def call_endpoint(client: Client, body: Any, headers: dict[str, str] | None = No
                 "jsonrpc": "2.0",
                 "id": 1,
                 "method": "tools/call",
-                "params": {"name": "list_notes", "arguments": "x"},
+                "params": {"name": "post_message", "arguments": "x"},
             },
             200,
             -32602,
