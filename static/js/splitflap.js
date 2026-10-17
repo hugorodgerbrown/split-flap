@@ -18,14 +18,13 @@
  * page's Replay button (state.replays) flips the board again from blank.
  */
 (() => {
-  const { COLS, ROWS, ICON_MASKS: ICON_URL, parse, message } = self.FlapText;
-  const { nextFlap, waveDelay } = self.FlapMotion;
+  const { COLS, ROWS, message } = self.FlapText;
+  const { Board } = self.FlapMotion;
   const CYCLE_MS = 30000;
   // Flip speed presets: each multiplies flap timing and the cascade delay.
   const SPEEDS = [{ name: 'Slow', k: 1.8 }, { name: 'Normal', k: 1 }, { name: 'Fast', k: 0.5 }];
   let speed = 1;
   try { const v = localStorage.getItem('splitflap.speed'); if (v !== null && SPEEDS[+v]) speed = +v; } catch (e) {}
-  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 
   // ---- Boards: whatever the server says each one shows, filled by poll() ----
@@ -35,121 +34,17 @@
   // A posted message, or the board's name while it has none.
   const renderBoard = b => message(b ? (b.message || b.name) : '');
 
-  // ---- Flap cells ----
-  const grid = document.getElementById('grid');
-  grid.style.setProperty('--cols', COLS);
-
-  function makeHalf(cls) {
-    const el = document.createElement('div');
-    el.className = cls;
-    const face = document.createElement('span');
-    face.className = 'face';
-    el.appendChild(face);
-    return el;
-  }
-  function setFace(half, sym) {
-    const face = half.firstChild;
-    if (sym[0] === '{') { face.textContent = ''; face.className = `face colour t-${sym[1]}`; face.style.removeProperty('--icon'); }
-    else if (sym.length > 1) { face.textContent = ''; face.className = 'face icon'; face.style.setProperty('--icon', ICON_URL[sym.slice(1, -1)]); }
-    else { face.textContent = sym; face.className = 'face'; face.style.removeProperty('--icon'); }
-  }
-
-  const TOP_FALL = [
-    { transform: 'rotateX(0deg)', filter: 'brightness(1)' },
-    { transform: 'rotateX(-90deg)', filter: 'brightness(0.45)' },
-  ];
-  const BOTTOM_FALL = [
-    { transform: 'rotateX(90deg)', filter: 'brightness(0.5)', offset: 0, easing: 'cubic-bezier(.4,0,1,1)' },
-    { transform: 'rotateX(0deg)', filter: 'brightness(1)', offset: 0.7, easing: 'ease-out' },
-    { transform: 'rotateX(11deg)', filter: 'brightness(0.95)', offset: 0.84, easing: 'ease-in' },
-    { transform: 'rotateX(0deg)', filter: 'brightness(1)', offset: 1 },
-  ];
-
-  class Cell {
-    constructor() {
-      this.el = document.createElement('div');
-      this.el.className = 'cell';
-      this.sTop = makeHalf('half top');
-      this.sBot = makeHalf('half bottom');
-      this.lTop = makeHalf('leaf top');
-      this.lBot = makeHalf('leaf bottom');
-      this.el.append(this.sTop, this.sBot, this.lTop, this.lBot);
-      this.cur = ' ';
-      this.target = ' ';
-      this.running = false;
-      // Each module's motor runs at a slightly different speed, like the real thing.
-      this.ms = 48 + Math.random() * 20;
-      this.drawn = 0;
-      [this.sTop, this.sBot, this.lTop, this.lBot].forEach(h => setFace(h, ' '));
-    }
-    set(sym, delay) {
-      this.target = sym;
-      if (this.running || this.cur === sym) return;
-      this.running = true;
-      setTimeout(() => this.run(), delay);
-    }
-    async run() {
-      while (this.cur !== this.target) {
-        if (reduceMotion || document.hidden) { this.snap(this.target); break; }
-        await this.flip(nextFlap(this.cur, this.target));
-      }
-      this.running = false;
-    }
-    snap(sym) {
-      this.drawn++;  // drop any flap still waiting to be drawn
-      this.a1?.cancel(); this.a2?.cancel();
-      [this.sTop, this.sBot, this.lTop, this.lBot].forEach(h => setFace(h, sym));
-      this.cur = sym;
-    }
-    // Fire-and-forget animations paced by a timer, so fast spins are not held back by frame timing.
-    // The clack is played on time and the flap drawn sound.lagMs() later, so they're heard and seen together.
-    flip(next, pace = 1) {
-      const d = this.ms * pace * SPEEDS[speed].k;
-      const prev = this.cur, drawn = this.drawn;
-      const draw = () => {
-        if (drawn !== this.drawn) return;
-        this.a1?.cancel(); this.a2?.cancel();
-        setFace(this.sTop, next);
-        setFace(this.sBot, prev);
-        setFace(this.lTop, prev);
-        setFace(this.lBot, next);
-        this.a1 = this.lTop.animate(TOP_FALL, { duration: d * 0.42, easing: 'cubic-bezier(.55,0,1,.45)', fill: 'forwards' });
-        this.a2 = this.lBot.animate(BOTTOM_FALL, { duration: d * 0.58, delay: d * 0.42, fill: 'both' });
-      };
-      const lag = sound.lagMs();
-      if (lag > 0) setTimeout(draw, lag); else draw();
-      setTimeout(() => sound.clack(), d * 0.65);
-      this.cur = next;
-      return new Promise(r => setTimeout(r, d));
-    }
-  }
-
-  const cells = [];
-  for (let i = 0; i < COLS * ROWS; i++) {
-    const c = new Cell();
-    cells.push(c);
-    grid.appendChild(c.el);
-  }
-
-  let shown = '';
+  // ---- Flap cells (static/js/flapmotion.js) ----
+  const board = new Board(document.getElementById('grid'), {
+    clack: () => sound.clack(),
+    lagMs: () => sound.lagMs(),
+    speed: () => SPEEDS[speed].k,
+  });
+  const show = lines => board.show(lines);
   // Flip every tile again from blank, as if the message had just arrived.
   function replay() {
-    cells.forEach(c => { c.target = ' '; c.snap(' '); });
-    shown = '';
+    board.snap([]);
     show(renderBoard(BOARDS[active]));
-  }
-  function show(lines) {
-    const rows = Array.from({ length: ROWS }, (_, r) => {
-      const syms = parse(lines[r] ?? '').slice(0, COLS);
-      while (syms.length < COLS) syms.push(' ');
-      return syms;
-    });
-    const key = rows.map(r => r.join('')).join('|');
-    if (key === shown) return;
-    shown = key;
-    rows.forEach((syms, r) => syms.forEach((sym, c) => {
-      cells[r * COLS + c].set(sym, waveDelay(r, c) * SPEEDS[speed].k);
-    }));
   }
 
   // ---- Sound: a short synthesised clack per flap, throttled into a rattle ----

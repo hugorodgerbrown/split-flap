@@ -36,4 +36,7 @@ NEEDS_NETWORK: dict[str, str] = {
     "js/webauthn_json.js": "passkeys need the server to sign in or register",
     "js/passkeys.js": "passkeys need the server to sign in or register",
     "js/design.js": "the design page is a staff reference, not the app",
+    "js/flapmotion.js": "only the board tuning page flips, a staff tool, not the app",
+    "js/board_tuning.js": "the board tuning page is a staff tool, not the app",
+    "css/tuning.css": "the board tuning page is a staff tool, not the app",
 }
