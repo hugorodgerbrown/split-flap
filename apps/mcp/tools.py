@@ -9,8 +9,6 @@ from dataclasses import dataclass
 from typing import Any
 
 from apps.boards.services import BoardError, display_for, find_board, post_message
-from apps.notes.forms import NoteForm
-from apps.notes.models import Note
 from apps.public.pages import page_as_markdown
 
 
@@ -47,31 +45,6 @@ class Tool:
             # client reads the nested one.
             described["_meta"] = {"ui": {"resourceUri": self.ui}, "ui/resourceUri": self.ui}
         return described
-
-
-def list_notes(user: Any, args: dict[str, Any]) -> dict[str, Any]:
-    """Return the user's latest notes, newest first."""
-    limit = args.get("limit", 20)
-    if not isinstance(limit, int) or not 1 <= limit <= 100:
-        raise ToolError("limit must be a whole number from 1 to 100.")
-    notes = Note.objects.for_user(user)[:limit]
-    return {
-        "notes": [
-            {"uuid": str(n.uuid), "text": n.text, "written_at": n.written_at.isoformat()}
-            for n in notes
-        ]
-    }
-
-
-def add_note(user: Any, args: dict[str, Any]) -> dict[str, Any]:
-    """Add a note for the user."""
-    form = NoteForm({"text": args.get("text", "")})
-    if not form.is_valid():
-        raise ToolError("; ".join(f"{k}: {' '.join(map(str, v))}" for k, v in form.errors.items()))
-    note = form.save(commit=False)
-    note.owner = user
-    note.save()
-    return {"uuid": str(note.uuid), "text": note.text, "written_at": note.written_at.isoformat()}
 
 
 def list_boards(user: Any, args: dict[str, Any]) -> dict[str, Any]:
@@ -130,37 +103,16 @@ TOOLS: dict[str, Tool] = {
     t.name: t
     for t in [
         Tool(
-            name="list_notes",
-            description="List the user's latest notes, newest first.",
-            input_schema={
-                "type": "object",
-                "properties": {"limit": {"type": "integer", "minimum": 1, "maximum": 100}},
-            },
-            func=list_notes,
-            ui="ui://notes/list",
-        ),
-        Tool(
-            name="add_note",
-            description="Add a note for the user.",
-            input_schema={
-                "type": "object",
-                "properties": {"text": {"type": "string", "maxLength": 2000}},
-                "required": ["text"],
-            },
-            func=add_note,
-            read_only=False,
-        ),
-        Tool(
             name="post_message",
             description=(
-                "Show a message on the user's split-flap board, which they watch on a TV. "
+                "Show a message on the user's split-flap board, which they watch on their display. "
                 "The board has 6 rows of 22 tiles and shows capital letters, digits and "
                 "! @ # $ ( ) - + & = ; : ' \" % , . / ? °. Lowercase is shown as capitals; "
                 "anything else is a blank tile. Words wrap and the message is centred; use a "
                 "line break to start a new row. {r} {o} {y} {g} {b} {v} {w} are red, orange, "
                 "yellow, green, blue, violet and white colour tiles. These emoji show as "
                 "pictograms: ☀ ⛅ ☁ 🌧 ⛈ ❄ 🌙 ☂ 🚆 ✈ 🚗 🚲 🏠 ☕ 🎵 📰 ❤ ★ 😊 ✓ ✗ ↑ ↓ ← →. "
-                "The TV turns to the board within a few seconds and shows the message until "
+                "The display turns to the board within a few seconds and shows the message until "
                 "the next one; boards fetch nothing themselves. An empty text clears the "
                 "board, which then shows its name."
             ),
@@ -203,7 +155,7 @@ TOOLS: dict[str, Tool] = {
         Tool(
             name="list_boards",
             description=(
-                "List the boards on the user's split-flap display, in the order the TV shows "
+                "List the boards on the user's split-flap display, in the order the display shows "
                 "them, with the message each shows. The user names their boards; an empty "
                 "message means the board shows its name."
             ),

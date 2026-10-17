@@ -7,7 +7,7 @@
  * view's height so the frame fits it, and hands the tool result to the view:
  *
  *   McpApp.onToolResult((result) => draw(result.structuredContent));
- *   McpApp.callTool('add_note', { text: 'hi' });   // a promise of its result
+ *   McpApp.callTool('post_message', { text: 'hi' });   // a promise of its result
  *
  * The SDK's App class does the same with a build step; the template has none.
  */

@@ -283,7 +283,7 @@ LOGGING = {
 # its own key), held to the callbacks below.
 OAUTH2_PROVIDER = oauth2_settings(
     resource_name=pwa_conf.APP_NAME,
-    scope_description="See and post to your boards, and read and add your notes",
+    scope_description="See and post to your boards",
 )
 MCP_AUTH = {
     # Every active account: each person connects Claude to post to their own

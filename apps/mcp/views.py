@@ -31,9 +31,10 @@ logger = logging.getLogger(__name__)
 SUPPORTED_VERSIONS = ("2025-11-25", "2025-06-18", "2025-03-26")
 SERVER_INFO = {"name": "split-flap", "title": APP_NAME, "version": "1.0.0"}
 INSTRUCTIONS = (
-    f"{APP_NAME} keeps short notes for the signed-in user. For questions about "
-    "privacy or personal data use privacy_policy; for the terms, terms_of_service; "
-    "for how to use the app, help."
+    f"{APP_NAME} is a split-flap display for the signed-in user's screens. They name "
+    "their boards; list_boards lists them, post_message shows a message on one and "
+    "get_board reads one back. For questions about privacy or personal data use "
+    "privacy_policy; for the terms, terms_of_service; for how to use the app, help."
 )
 
 PARSE_ERROR = -32700

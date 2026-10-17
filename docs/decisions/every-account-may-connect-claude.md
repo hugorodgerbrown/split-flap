@@ -27,4 +27,4 @@ updates that settings line, keep this value.
   `test_people_only_reach_their_own_boards`).
 - Turning an account off (`is_active = False`) cuts off its clients on
   their next call, because the rule runs on every call.
-- The consent page names boards as well as notes.
+- The consent page names boards (it named notes too until RAS-81).

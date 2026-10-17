@@ -67,14 +67,14 @@ def call(user: Any, name: str, arguments: dict[str, Any], client: str = "claude"
 def test_a_tool_call_sends_one_event(sent: list[dict[str, Any]]) -> None:
     """The event names the tool, the app and a hashed caller, and nothing the person wrote."""
     user = UserFactory.create()
-    call(user, "add_note", {"text": "a private thought"})
+    call(user, "post_message", {"text": "a private thought"})
     [request] = sent
     assert request["url"] == "https://fiveb.ar/api/events"
     assert request["headers"]["Authorization"] == f"Bearer {TOKEN}"
     assert request["timeout"] == events.TIMEOUT
     assert request["body"] == {
         "site": DOMAIN,
-        "name": "/mcp/add_note",
+        "name": "/mcp/post_message",
         "id": events.caller_id(user),
         "client": "claude",
         "props": {"outcome": "ok"},
@@ -97,7 +97,7 @@ def test_the_caller_id_is_stable_per_user_and_not_the_id() -> None:
 @pytest.mark.usefixtures("on")
 def test_a_tool_error_is_counted_as_an_error(sent: list[dict[str, Any]]) -> None:
     """A ToolError still answers, and counts with outcome "error"."""
-    result = call(UserFactory.create(), "list_notes", {"limit": 0}, client="")
+    result = call(UserFactory.create(), "post_message", {"text": 5}, client="")
     assert result["isError"]
     [request] = sent
     assert request["body"]["props"] == {"outcome": "error"}
@@ -110,7 +110,7 @@ def test_a_tool_error_is_counted_as_an_error(sent: list[dict[str, Any]]) -> None
     ("method", "params"),
     [
         ("tools/call", {"name": "no_such_tool"}),
-        ("tools/call", {"name": "list_notes", "arguments": "not an object"}),
+        ("tools/call", {"name": "post_message", "arguments": "not an object"}),
         ("tools/call", {"name": "help", "arguments": []}),
         ("tools/list", {}),
         ("initialize", {}),
