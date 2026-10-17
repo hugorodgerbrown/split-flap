@@ -1,7 +1,7 @@
 [project]
 name = "split-flap"
 version = "0.1.0"
-description = "A split-flap board for your TV that Claude can post to"
+description = "A split-flap display for any screen that Claude can post to"
 authors = [{ name = "Hugo Rodger-Brown", email = "hugo@rodger-brown.com" }]
 requires-python = ">=3.14,<3.15"
 dependencies = [

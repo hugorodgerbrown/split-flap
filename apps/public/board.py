@@ -12,7 +12,10 @@ import logging
 import re
 from typing import Any
 
+from django.templatetags.static import static
+
 from apps.boards.layout import COLS, ROWS, parse
+from apps.boards.views import PICTOGRAMS_SVG
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +26,14 @@ STRIPE = "{r}{o}{y}{g}{b}{v}"
 DEMO_BOARDS: list[tuple[str, list[str]]] = [
     (
         "Morning",
-        [STRIPE, "", "GOOD MORNING", "BINS GO OUT TONIGHT", "", "POSTED BY CLAUDE 07:00"],
+        [
+            STRIPE,
+            "GOOD MORNING",
+            "IT'S A BEAUTIFUL DAY",
+            ":sun: 18C :train: 07:52",
+            "",
+            "BY RIFFLE",
+        ],
     ),
     (
         "Weather",
@@ -69,15 +79,18 @@ def frames() -> list[list[str]]:
 
 def as_text(rows: list[str]) -> str:
     """Return a board's rows as a sentence a screen reader can say."""
-    words = re.sub(r"\{[a-z]\}", " ", " ".join(rows)).split()
+    text = re.sub(r"\{[a-z]\}", " ", " ".join(rows))
+    words = re.sub(r":([a-z]+):", r"\1", text).split()
     return " ".join(words).capitalize()
 
 
 def cell(source: str) -> dict[str, str]:
-    """Return how one tile draws: a colour (``tile``) or a character (``char``)."""
+    """Return how one tile draws: a colour (``tile``), a pictogram (``icon``) or a character."""
     if len(source) == 3 and source[0] == "{":
-        return {"tile": source[1], "char": ""}
-    return {"tile": "", "char": source}
+        return {"tile": source[1], "char": "", "icon": ""}
+    if len(source) > 1 and source[0] == ":":
+        return {"tile": "", "char": "", "icon": source[1:-1]}
+    return {"tile": "", "char": source, "icon": ""}
 
 
 def front_board() -> dict[str, Any]:
@@ -89,6 +102,7 @@ def front_board() -> dict[str, Any]:
         "names": names,
         "label": as_text(DEMO_BOARDS[0][1]),
         "cells": [cell(source) for source in all_frames[0]],
+        "pictograms": static(PICTOGRAMS_SVG),
         "frames_json": json.dumps(all_frames, ensure_ascii=False),
         "names_json": json.dumps(names),
         "labels_json": json.dumps([as_text(rows) for _name, rows in DEMO_BOARDS]),

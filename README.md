@@ -1,6 +1,6 @@
-# Split-Flap
+# Riffle
 
-A split-flap board for your TV that Claude can post to
+A split-flap display for any screen that Claude can post to
 
 Generated from the Titan [django-titan-template](https://github.com/hugorodgerbrown/django-titan-template).
 Pull template improvements in with `copier update --trust`.

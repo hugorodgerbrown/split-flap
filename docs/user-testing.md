@@ -1,4 +1,4 @@
-# Testing Split-Flap as a user
+# Testing Riffle as a user
 
 A script for checking a deployment from start to finish, the way a new
 user meets it. You need no technical knowledge: a phone or computer, an
@@ -22,7 +22,7 @@ did, what you saw, and take a screenshot.
 2. Read the home page, then follow **Terms**, **Privacy** and **Help** at
    the bottom of the page.
 
-You should see: a home page that says what Split-Flap is, a
+You should see: a home page that says what Riffle is, a
 **Get started** button, and three pages that open without signing in. The
 privacy page says what is kept about you.
 
@@ -32,7 +32,7 @@ privacy page says what is kept about you.
 2. Enter the email address that has never been used here, and press
    **Email me a link**.
 3. A page titled **Check your email** appears. Find the email: its subject
-   is "Your Split-Flap sign-in code is" followed by six digits.
+   is "Your Riffle sign-in code is" followed by six digits.
 4. Type the six digits into **Code** and press **Sign in**.
 
 You should see: the email arrives within a minute (check spam), and after
@@ -110,13 +110,13 @@ last person's notes, even offline.
 
 ## 9. Connect Claude
 
-Split-Flap lets Claude read and add notes for you, and answer
+Riffle lets Claude read and add notes for you, and answer
 questions about the site.
 
 1. In Claude (claude.ai or the Claude app), open **Settings**, then
    **Connectors**, and add a custom connector with the URL
    `https://example.com/mcp`.
-2. Press **Connect**. A Split-Flap page opens: sign in with your
+2. Press **Connect**. A Riffle page opens: sign in with your
    email and code if asked.
 3. A page asks "Connect Claude?". Press **Connect**.
 
@@ -124,25 +124,25 @@ You should see: Claude says the connector is connected. If the page says
 "This connection can't go ahead" or you get a "forbidden" error, your
 account isn't allowed to connect yet: ask whoever runs the site.
 
-## 10. Talk to Split-Flap through Claude
+## 10. Talk to Riffle through Claude
 
 Start a new chat in Claude with the connector turned on and try these.
 Claude may ask permission before it uses the connector each time: allow it.
 
 | Ask Claude | You should see |
 | --- | --- |
-| "What are my latest notes in Split-Flap?" | The notes you wrote in scenarios 6 and 7, newest first. |
-| "Add a note to Split-Flap: Pack the head torch." | Claude says it's added. Refresh **Notes** in the app: it's there. |
-| "What does Split-Flap keep about me?" | A summary of the privacy page, in Claude's words. |
-| "What are Split-Flap's terms of service?" | A summary of the terms page. |
-| "How do I sign in to Split-Flap on my iPhone?" | Advice from the help page: type the code rather than opening the link. |
-| "Add an empty note to Split-Flap." | Claude says it couldn't, because a note needs some text. Nothing new appears in the app. |
+| "What are my latest notes in Riffle?" | The notes you wrote in scenarios 6 and 7, newest first. |
+| "Add a note to Riffle: Pack the head torch." | Claude says it's added. Refresh **Notes** in the app: it's there. |
+| "What does Riffle keep about me?" | A summary of the privacy page, in Claude's words. |
+| "What are Riffle's terms of service?" | A summary of the terms page. |
+| "How do I sign in to Riffle on my iPhone?" | Advice from the help page: type the code rather than opening the link. |
+| "Add an empty note to Riffle." | Claude says it couldn't, because a note needs some text. Nothing new appears in the app. |
 
 ## 11. Disconnect Claude
 
 1. Visit `https://example.com/oauth/connected/` while signed in.
 2. Press **Disconnect** next to Claude.
-3. In Claude, ask "What are my latest notes in Split-Flap?" again.
+3. In Claude, ask "What are my latest notes in Riffle?" again.
 
 You should see: Claude listed under **Connected apps** before you
 disconnect, and the list empty afterwards. Claude can no longer read your

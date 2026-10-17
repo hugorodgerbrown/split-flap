@@ -1,11 +1,12 @@
 """The app's identity as the manifest, launch screen and browser chrome show it.
 
 Set once by the project template from its answers; edit freely. Settings,
-the admin and the MCP server read the name from here, and ``bin/make-icons``
-drew the icons in ``static/icons/`` from the same name and colour.
+the admin and the MCP server read the name from here, and ``bin/shoot-icons``
+draws the icons in ``static/icons/`` and the header's wordmark from the name:
+an R on one of the board's tiles.
 """
 
-APP_NAME = "Split-Flap"
+APP_NAME = "Riffle"
 SHORT_NAME = APP_NAME[:12]
 DESCRIPTION = "A split-flap display for any screen that Claude can post to"
 THEME_COLOUR = "#1C1B1A"
@@ -44,6 +45,7 @@ PRECACHE_STATIC = [
     "img/pictograms.svg",
     "fonts/barlow-semi-condensed-600-latin.woff2",
     "icons/icon-192.png",
+    "img/wordmark.png",
 ]
 
 # Loaded into the service worker with importScripts(), in this order.

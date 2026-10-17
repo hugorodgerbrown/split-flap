@@ -1,6 +1,6 @@
-# CLAUDE.md — Split-Flap
+# CLAUDE.md — Riffle
 
-A split-flap board for your TV that Claude can post to. A Django PWA generated from the Titan
+A split-flap display for any screen that Claude can post to. A Django PWA generated from the Titan
 [django-titan-template](https://github.com/hugorodgerbrown/django-titan-template); keep
 it close to the template so `copier update --trust` stays a clean merge.
 

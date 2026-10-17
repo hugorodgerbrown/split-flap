@@ -55,6 +55,9 @@
   const DRUM = [' ', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ', ...'1234567890', ...'!@#$()-+&=;:\'"%,./?°',
     '{r}', '{o}', '{y}', '{g}', '{b}', '{v}', '{w}', ...Object.keys(ICONS).map(k => `:${k}:`)];
   const DRUM_POS = new Map(DRUM.map((s, i) => [s, i]));
+  // Each pictogram as a CSS mask, painted in flap ink by board.css (.face.icon).
+  const ICON_MASKS = Object.fromEntries(Object.entries(ICONS).map(([k, svg]) => [k,
+    `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">${svg}</svg>`)}")`]));
   const ALIASES = { '’': "'", '‘': "'", '“': '"', '”': '"', '–': '-', '—': '-', '…': '.' };
 
   function parse(str) {
@@ -94,5 +97,5 @@
     return Array.from({ length: ROWS }, (_, r) => center(lines[r - top] ?? ''));
   }
 
-  self.FlapText = { COLS, ROWS, ICONS, EMOJI, ALIASES, DRUM, DRUM_POS, parse, len, wrap, message };
+  self.FlapText = { COLS, ROWS, ICONS, ICON_MASKS, EMOJI, ALIASES, DRUM, DRUM_POS, parse, len, wrap, message };
 })();

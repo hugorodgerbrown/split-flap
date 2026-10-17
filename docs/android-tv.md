@@ -1,12 +1,12 @@
 # The Android TV app
 
-`android-tv/` is Split-Flap for Android TV and Google TV: a home-screen
+`android-tv/` is Riffle for Android TV and Google TV: a home-screen
 tile that opens straight onto your display's board. Why it is built this
 way: [docs/decisions/the-tv-app-is-a-shell-around-the-board.md](decisions/the-tv-app-is-a-shell-around-the-board.md).
 
 ## Using it
 
-1. Open **Split-Flap** on the TV. It shows a code like `K7Q-4MD` and a QR code.
+1. Open **Riffle** on the TV. It shows a code like `K7Q-4MD` and a QR code.
 2. On your phone, scan the QR code, or go to `/app/display/pair/` and type the code.
 3. The TV shows your board within a few seconds, and opens straight to it from then on.
 
@@ -59,7 +59,7 @@ change under `android-tv/` and uploads the APK.
 
 On GitHub, open **Actions → Android TV → Run workflow**, leave the branch
 on `main`, type the version (three numbers, like `0.1.0`) and run it. It
-tests and builds the APK, then publishes the release **Split-Flap for
+tests and builds the APK, then publishes the release **Riffle for
 Android TV 0.1.0** with `split-flap-tv-0.1.0.apk` attached, tagging the
 commit it built `tv-v0.1.0`. Pushing a `tv-v0.1.0` tag yourself does the
 same. Each version can be released once.

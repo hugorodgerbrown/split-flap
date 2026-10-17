@@ -125,5 +125,5 @@ jobs:
           fi
           gh release create "tv-v$VERSION" split-flap-tv-*.apk \
             --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
-            --title "Split-Flap for Android TV $VERSION" \
+            --title "Riffle for Android TV $VERSION" \
             --notes "Sideload this APK onto your Android TV or Google TV (docs/android-tv.md)."

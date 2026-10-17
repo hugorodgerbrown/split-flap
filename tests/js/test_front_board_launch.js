@@ -18,6 +18,7 @@ beforeAll(async () => {
       <div class="grid">${cell('H')}${cell('I')}${cell('')}</div>
       <div class="engrave"><span data-board-name>Morning</span><span class="leds"><span class="led on"></span><span class="led"></span></span></div>
     </div>`;
+  await import('../../static/js/flaptext.js');
   await import('../../static/js/front_board.js');
 });
 

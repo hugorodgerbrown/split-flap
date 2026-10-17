@@ -1,0 +1,150 @@
+#!/usr/bin/env python3
+"""Draw the app's name and icons as the board draws a tile: an R on a flap.
+
+Every mark is one tile in the board's own flap colours and Barlow type
+(static/css/board.css), so the icon on a phone, the favicon in a tab and the
+name in the header look like they came off the board. Each is drawn as a
+small page and photographed, so the type is the real font. It needs
+Pillow, which the project doesn't depend on:
+
+    uv run --group e2e --with pillow python bin/shoot-icons
+
+It replaces the template's placeholder icons in static/icons/ (from
+bin/make-icons), the header's wordmark in static/img/ and the Android TV
+app's launcher icon and banner, then commit them.
+"""
+
+import base64
+import io
+import logging
+import os
+import sys
+from pathlib import Path
+
+from PIL import Image
+from playwright.sync_api import Page, sync_playwright
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+
+from apps.pwa.conf import APP_NAME  # noqa: E402
+
+logger = logging.getLogger(__name__)
+
+FONTS = ROOT / "static" / "fonts"
+ICONS = ROOT / "static" / "icons"
+IMG = ROOT / "static" / "img"
+TV = ROOT / "android-tv" / "app" / "src" / "main" / "res" / "drawable-xhdpi"
+# Colours kept in each PNG: plenty for a dark tile, and small enough that the
+# icon and wordmark fit the offline shell's byte budget (apps/pwa/conf.py).
+COLOURS = 128
+STRIPE = ("#d8372f", "#ee7a1f", "#f5c22b", "#2f9d5b", "#2069cf", "#7a4bc8")
+
+
+
+def font(name: str) -> str:
+    """Return a font file as a data: URL, as a page drawn from a string can't read files."""
+    data = base64.b64encode((FONTS / name).read_bytes()).decode()
+    return f"data:font/woff2;base64,{data}"
+
+
+# The board's flap, from board.css: two halves, a split between them, cream ink.
+PAGE_CSS = f"""
+@font-face {{ font-family: "Flap"; font-weight: 600;
+  src: url("{font("barlow-semi-condensed-600-latin.woff2")}") format("woff2"); }}
+@font-face {{ font-family: "Name"; font-weight: 600;
+  src: url("{font("barlow-600-latin.woff2")}") format("woff2"); }}
+* {{ box-sizing: border-box; margin: 0; }}
+html, body {{ background: transparent; }}
+.ground {{ display: flex; align-items: center; justify-content: center; flex-direction: column;
+  background: linear-gradient(180deg, #242321, #121211); }}
+.tile {{ --w: 40px; position: relative; flex: none; width: var(--w); height: calc(var(--w) * 1.38);
+  border-radius: calc(var(--w) * 0.07);
+  background: linear-gradient(180deg, #262626, #1d1d1d 50%, #1a1a1a 50%, #131313);
+  box-shadow: 0 calc(var(--w) * 0.04) calc(var(--w) * 0.1) rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  color: #eeeae1; font: 600 calc(var(--w) * 0.95) / calc(var(--w) * 1.38) "Flap";
+  text-align: center; }}
+.tile::after {{ content: ""; position: absolute; left: 0; right: 0; top: 50%;
+  height: max(1px, calc(var(--w) * 0.035)); transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.92); }}
+.tile.plain::after {{ display: none; }}
+.row {{ display: flex; gap: calc(var(--w) * 0.12); }}
+.stripe {{ display: flex; gap: 5px; margin-top: 22px; }}
+.stripe i {{ width: 28px; height: 16px; border-radius: 2px; }}
+.lockup {{ display: inline-flex; align-items: center; gap: calc(var(--w) * 0.45); }}
+/* On the dark header, a faint edge keeps the tile from sinking into it. */
+.lockup .tile {{ box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12); }}
+.lockup span {{ color: #ffffff; font: 600 calc(var(--w) * 1.15) / 1 "Name"; letter-spacing: -0.01em; }}
+"""
+
+
+def tile(width: float, letter: str = "R", *, plain: bool = False) -> str:
+    """Return one tile, ``width`` pixels wide, showing ``letter``."""
+    cls = "tile plain" if plain else "tile"
+    return f'<div class="{cls}" style="--w:{width}px">{letter}</div>'
+
+
+def ground(size: int, inner: str, *, radius: float = 0) -> str:
+    """Return the dark brand ground, ``size`` pixels square, holding ``inner``."""
+    style = f"width:{size}px;height:{size}px;border-radius:{radius}px"
+    return f'<div class="ground" style="{style}">{inner}</div>'
+
+
+def save(png: bytes, out: Path) -> None:
+    """Write a photographed ``png`` to ``out`` with its colours reduced to ``COLOURS``."""
+    image = Image.open(io.BytesIO(png)).convert("RGBA")
+    out.parent.mkdir(parents=True, exist_ok=True)
+    image.quantize(COLOURS, method=Image.Quantize.FASTOCTREE).save(out, optimize=True)
+    logger.info("Wrote %s", out.relative_to(ROOT))
+
+
+def shoot(page: Page, html: str, out: Path, width: int, height: int) -> None:
+    """Draw ``html`` and photograph it, ``width`` by ``height`` CSS pixels, into ``out``."""
+    page.set_viewport_size({"width": width, "height": height})
+    page.set_content(f"<!doctype html><style>{PAGE_CSS}</style><body>{html}</body>")
+    page.evaluate("document.fonts.ready")
+    clip = {"x": 0, "y": 0, "width": width, "height": height}
+    save(page.screenshot(omit_background=True, clip=clip), out)
+
+
+def lockup(page: Page) -> None:
+    """Photograph the header's wordmark: the tile and the name, 28px tall."""
+    page.set_viewport_size({"width": 400, "height": 100})
+    html = f'<div class="lockup" style="--w:20px">{tile(20)}<span>{APP_NAME}</span></div>'
+    page.set_content(f"<!doctype html><style>{PAGE_CSS}</style><body>{html}</body>")
+    page.evaluate("document.fonts.ready")
+    save(page.locator(".lockup").screenshot(omit_background=True), IMG / "wordmark.png")
+
+
+def main() -> None:
+    """Draw every mark."""
+    stripe = "".join(f'<i style="background:{colour}"></i>' for colour in STRIPE)
+    banner = "".join(tile(40, letter) for letter in APP_NAME.upper())
+    with sync_playwright() as playwright:
+        executable = os.environ.get("PLAYWRIGHT_CHROMIUM_EXECUTABLE")
+        browser = playwright.chromium.launch(executable_path=executable)
+        # Icons: the tile on the dark ground. A maskable icon keeps it in the
+        # inner 80% the OS may crop to; iOS rounds the touch icon itself.
+        page = browser.new_page()
+        shoot(page, ground(192, tile(98), radius=42), ICONS / "icon-192.png", 192, 192)
+        shoot(page, ground(512, tile(260), radius=113), ICONS / "icon-512.png", 512, 512)
+        shoot(page, ground(512, tile(200)), ICONS / "icon-maskable-512.png", 512, 512)
+        shoot(page, ground(180, tile(92)), ICONS / "apple-touch-icon.png", 180, 180)
+        shoot(page, ground(32, tile(20), radius=6), ICONS / "favicon-32.png", 32, 32)
+        # At 16px the split is lost in the R, so it shows the letter alone.
+        shoot(page, ground(16, tile(12, plain=True), radius=3), ICONS / "favicon-16.png", 16, 16)
+        shoot(page, ground(192, tile(98), radius=42), TV / "ic_launcher.png", 192, 192)
+        row = f'<div class="row" style="--w:40px">{banner}</div><div class="stripe">{stripe}</div>'
+        tv = f'<div class="ground" style="width:320px;height:180px">{row}</div>'
+        shoot(page, tv, TV / "banner.png", 320, 180)
+        page.close()
+        # The wordmark at three times its 28px height, for sharp screens.
+        page = browser.new_page(device_scale_factor=3)
+        lockup(page)
+        browser.close()
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+    main()

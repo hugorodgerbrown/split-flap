@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Split-Flap</string>
+    <string name="app_name">Riffle</string>
 
     <string name="pair_title">Link this TV to your display</string>
     <string name="pair_step_go">On your phone, go to</string>
@@ -10,12 +10,12 @@
     <string name="pair_qr_description">QR code that opens the page for this code</string>
     <string name="pair_getting_code">Getting a code…</string>
     <string name="pair_waiting">Waiting for the code. A new one appears every ten minutes.</string>
-    <string name="pair_offline">Can\'t reach Split-Flap. Trying again…</string>
+    <string name="pair_offline">Can\'t reach Riffle. Trying again…</string>
     <string name="pair_busy">Too many codes asked for. Trying again in a minute…</string>
 
     <string name="reconnecting">Reconnecting to your display…</string>
 
-    <string name="menu_title">Split-Flap</string>
+    <string name="menu_title">Riffle</string>
     <string name="menu_keep_watching">Keep watching</string>
     <string name="menu_start_on_boot_off">Start when the TV turns on: Off</string>
     <string name="menu_start_on_boot_on">Start when the TV turns on: On</string>
