@@ -7,6 +7,9 @@
 {% block share_description %}Type a message from your phone, or let Claude post the news, the weather and your trains. The board flips, tile by tile, to show it.{% endblock %}
 {% block extra_css %}<link rel="stylesheet" href="{% static 'css/board.css' %}">{% endblock %}
 {% block extra_js %}
+  {# A Home Screen copy of this page (saved before the manifest's start_url was the display page) opens the app instead. Blocking, so the homepage never paints first. #}
+  <meta name="app-start" content="{% url 'boards:manage' %}">
+  <script src="{% static 'js/launch_redirect.js' %}"></script>
   <script src="{% static 'js/flap_sound.js' %}" defer></script>
   <script src="{% static 'js/flaptext.js' %}" defer></script>
   <script src="{% static 'js/flapmotion.js' %}" defer></script>

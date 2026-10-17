@@ -79,7 +79,7 @@ back in.
 ## Scope
 
 The installed app is `/app/` and nothing else: the manifest's `scope`,
-`start_url` and `id`, and the worker at `/app/sw.js`, which controls only
+`start_url` (the display page) and `id`, and the worker at `/app/sw.js`, which controls only
 paths under its own. Public pages extend `public_base.html` and load no
 worker or outbox. Why: [decisions/the-installed-app-is-scoped-to-app.md](decisions/the-installed-app-is-scoped-to-app.md).
 A new signed-in page belongs under `/app/` and extends `base.html`; a new

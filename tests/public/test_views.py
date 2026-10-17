@@ -35,6 +35,14 @@ def test_public_pages_are_outside_the_app(client: Client, name: str) -> None:
     assert "pwa.js" not in content
 
 
+def test_home_screen_launch_of_the_homepage_opens_the_app(client: Client) -> None:
+    """The homepage names the app's start page for launch_redirect.js, in <head>."""
+    content = client.get(reverse("public:home")).content.decode()
+    head = content.split("</head>")[0]
+    assert f'<meta name="app-start" content="{reverse("boards:manage")}">' in head
+    assert "js/launch_redirect.js" in head
+
+
 MCP_URL = "https://example.test/mcp"
 
 
