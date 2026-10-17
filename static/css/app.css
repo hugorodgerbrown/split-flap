@@ -8,7 +8,7 @@
 
 :root {
   /* Colour. Text tokens keep 4.5:1 on --bg and --card. */
-  --brand: #F5C22B;
+  --brand: #1C1B1A;
   --brand-text: #ffffff;
   --brand-text-soft: rgb(255 255 255 / 35%);
   --bg: #f6f7f9;

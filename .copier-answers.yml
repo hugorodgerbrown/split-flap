@@ -10,4 +10,4 @@ mcp_can_connect: apps.mcp.policy.staff_only
 project_name: Split-Flap
 project_slug: split-flap
 render_region: frankfurt
-theme_colour: '#F5C22B'
+theme_colour: '#1C1B1A'
