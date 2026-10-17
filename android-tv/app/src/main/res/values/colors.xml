@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The board's palette (static/css/board.css), so the app looks like the object it shows. -->
+<resources>
+    <color name="frame">#1C1B1A</color>
+    <color name="well">#090909</color>
+    <color name="ink">#EEEAE1</color>
+    <color name="ink_muted">#A8A397</color>
+    <color name="engrave">#4B4841</color>
+    <color name="tile_yellow">#F5C22B</color>
+</resources>

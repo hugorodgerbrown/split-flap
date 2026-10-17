@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/well">
+
+    <!-- The display's board page, full screen. -->
+    <WebView
+        android:id="@+id/board"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:focusable="true"
+        android:visibility="gone" />
+
+    <!-- First run: a code to type on a phone, and a QR code that opens the page for it. -->
+    <LinearLayout
+        android:id="@+id/pair"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:background="@drawable/panel"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:padding="40dp"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-condensed"
+            android:text="@string/pair_title"
+            android:textSize="34sp"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/pair_step_go"
+                    android:textColor="@color/ink_muted"
+                    android:textSize="20sp" />
+
+                <TextView
+                    android:id="@+id/pair_address"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textSize="24sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:text="@string/pair_step_type"
+                    android:textColor="@color/ink_muted"
+                    android:textSize="20sp" />
+
+                <TextView
+                    android:id="@+id/pair_code"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/code_well"
+                    android:fontFamily="monospace"
+                    android:letterSpacing="0.15"
+                    android:paddingHorizontal="24dp"
+                    android:paddingVertical="12dp"
+                    android:textColor="@color/tile_yellow"
+                    android:textSize="56sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="48dp"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:id="@+id/pair_qr"
+                    android:layout_width="200dp"
+                    android:layout_height="200dp"
+                    android:contentDescription="@string/pair_qr_description" />
+
+                <TextView
+                    android:layout_width="200dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:gravity="center"
+                    android:text="@string/pair_step_scan"
+                    android:textColor="@color/ink_muted"
+                    android:textSize="16sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/pair_status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:textColor="@color/ink_muted"
+            android:textSize="16sp" />
+    </LinearLayout>
+
+    <!-- Shown instead of the board while the page can't be loaded; it retries by itself. -->
+    <TextView
+        android:id="@+id/reconnecting"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:background="@drawable/panel"
+        android:paddingHorizontal="32dp"
+        android:paddingVertical="20dp"
+        android:text="@string/reconnecting"
+        android:textColor="@color/ink_muted"
+        android:textSize="22sp"
+        android:visibility="gone" />
+
+    <!-- Back or Menu on the remote. -->
+    <LinearLayout
+        android:id="@+id/menu"
+        android:layout_width="440dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:background="@drawable/panel"
+        android:orientation="vertical"
+        android:padding="24dp"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:fontFamily="sans-serif-condensed"
+            android:text="@string/menu_title"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/menu_keep_watching"
+            style="@style/MenuButton"
+            android:text="@string/menu_keep_watching" />
+
+        <Button
+            android:id="@+id/menu_start_on_boot"
+            style="@style/MenuButton"
+            android:text="@string/menu_start_on_boot_off" />
+
+        <TextView
+            android:id="@+id/menu_hint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textColor="@color/ink_muted"
+            android:textIsSelectable="false"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/menu_unlink"
+            style="@style/MenuButton"
+            android:text="@string/menu_unlink" />
+
+        <Button
+            android:id="@+id/menu_exit"
+            style="@style/MenuButton"
+            android:text="@string/menu_exit" />
+    </LinearLayout>
+</FrameLayout>
