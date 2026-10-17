@@ -2,9 +2,11 @@
  * static/js/front_board.js — flips the front page's board through its demo boards.
  *
  * The server draws the first board (apps/public/board.py), so the page reads
- * the same without this script. Every few seconds it turns each tile through
- * the drum to the next board's symbol, flap by flap, as the TV does
- * (static/js/splitflap.js). Reduced motion shows each board without flipping.
+ * the same without this script. With it, the board opens blank and flips the
+ * first board in, as the display does when it loads, then every few seconds
+ * turns each tile through the drum to the next board's symbol, flap by flap
+ * (as static/js/splitflap.js does). Reduced motion shows each board without
+ * flipping.
  */
 (() => {
   const board = document.querySelector('[data-front-board]');
@@ -15,6 +17,7 @@
   const nameEl = board.querySelector('[data-board-name]');
   const leds = [...board.querySelectorAll('.led')];
   const HOLD_MS = 6500;
+  const START_MS = 400;
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // The drum's order, as splitflap.js turns through it (pictograms aside).
@@ -39,13 +42,16 @@
   const TOP_FALL = [{ transform: 'rotateX(0deg)' }, { transform: 'rotateX(-90deg)' }];
   const BOTTOM_FALL = [{ transform: 'rotateX(90deg)' }, { transform: 'rotateX(0deg)' }];
 
+  // The board opens blank and flips in its first message, as the display
+  // does when it loads; without motion it keeps the message the server drew.
   const cells = [...board.querySelectorAll('.cell')].map((el, i) => {
-    const sym = frames[0][i];
+    const sym = reduceMotion ? frames[0][i] : ' ';
     const lTop = leaf('top', sym);
     const lBot = leaf('bottom', sym);
     el.append(lTop, lBot);
     const [sTop, sBot] = el.querySelectorAll('.half');
     const faces = [sTop, sBot, lTop, lBot].map(h => h.firstElementChild);
+    faces.forEach(f => setFace(f, sym));
     return { cur: sym, target: sym, running: false, faces, lTop, lBot, ms: 48 + Math.random() * 20 };
   });
 
@@ -96,5 +102,6 @@
     });
   }
 
+  setTimeout(() => show(0), START_MS);
   setInterval(() => { if (!document.hidden) show((shown + 1) % frames.length); }, HOLD_MS);
 })();
