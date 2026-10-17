@@ -62,10 +62,10 @@
     <section class="card stack" id="mcp" aria-labelledby="mcp-title">
       <p class="eyebrow">Or just ask</p>
       <h2 id="mcp-title">Let Claude run your board</h2>
-      <p>Connect {{ pwa.name }} to Claude and ask in plain words. Set it up as a Routine and Claude posts to your TV on a schedule, while you make the coffee.</p>
+      <p>Connect {{ pwa.name }} to Claude and ask in plain words. Set it up as a Routine and Claude posts to your display on a schedule, while you make the coffee.</p>
       <div class="chat">
         <p class="chat__you">Every weekday at 7, put the weather and my first train on the board.</p>
-        <p class="chat__reply">Done. Tomorrow at 07:00 your TV shows London's forecast, then the 07:52 to Cambridge.</p>
+        <p class="chat__reply">Done. Tomorrow at 07:00 your display shows London's forecast, then the 07:52 to Cambridge.</p>
         <p class="chat__you">And remind everyone the bins go out tonight.</p>
         <p class="chat__reply">It's on the board now.</p>
       </div>
@@ -81,7 +81,7 @@
         <button class="button button--secondary" type="button" data-copy="{{ mcp_url }}" data-copy-target="mcp-url" data-copied-label="Copied" hidden>Copy</button>
       </p>
       <p><a href="{% url 'public:help' %}#use-with-ai">How to add it to Claude or ChatGPT</a></p>
-      <p class="meta">Claude can post to your boards and read what's on them. It can't see anyone else's, and your TV's link stays yours.</p>
+      <p class="meta">Claude can post to your boards and read what's on them. It can't see anyone else's, and your display's link stays yours.</p>
     </section>
   {% endif %}
 
