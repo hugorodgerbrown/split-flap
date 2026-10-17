@@ -27,6 +27,15 @@ describe('launch redirect', () => {
     expect(replace).toHaveBeenCalledWith('/app/display/');
   });
 
+  it('redirects only once a session, so the way home from sign-in works', async () => {
+    standalone(true);
+    await import('../../static/js/launch_redirect.js?first');
+    vi.resetModules();
+    await import('../../static/js/launch_redirect.js?again');
+    expect(replace).toHaveBeenCalledTimes(1);
+    expect(sessionStorage.getItem('app:launched')).toBeNull();
+  });
+
   it('stays on the homepage in a browser tab', async () => {
     standalone(false);
     await import('../../static/js/launch_redirect.js?tab');

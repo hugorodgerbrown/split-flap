@@ -21,7 +21,9 @@ Screen site as a web app, so the "app" launched on the homepage.
   cold start in standalone display mode it replaces itself with the
   display page before it paints. Once any app page has run, the session is
   marked (`launch_gate.js`), so the wordmark's link home from inside the
-  app still shows the homepage.
+  app still shows the homepage. It redirects once a session at most, so
+  a signed-out launch that lands on sign-in can still follow the wordmark
+  home.
 - Public pages still link no manifest
   ([the-installed-app-is-scoped-to-app.md](the-installed-app-is-scoped-to-app.md)):
   the redirect covers a Home Screen copy of `/`, and installing from an app
