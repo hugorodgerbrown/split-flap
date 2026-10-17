@@ -1,0 +1,55 @@
+# Render Blueprint: one web service and a daily clean-up job.
+#
+# Settings come from two env groups that titan makes before this Blueprint
+# is deployed, so the first deploy already has every value it needs:
+#
+# - titan: shared by every Titan app (debug off, the Python version, hosts
+#   and origins under the parent domain, the SMTP relay).
+# - split-flap: this app's own (DATABASE_URL, DJANGO_SECRET_KEY,
+#   ACCOUNTS_EMAIL_KEY, the mail key and sender, SITE_URL and FIVEBAR_DOMAIN;
+#   FIVEBAR_TOKEN, added by hand, counts MCP tool calls).
+#
+# Both are referenced here, not declared, so a Blueprint sync never
+# overwrites them. To override a shared value for this app only, set it on
+# the service: a service's own env vars win over its groups'.
+#
+# uv is pinned: the build runs with the service's secrets in its environment,
+# so it installs a known version, and uv then installs exactly what uv.lock lists.
+services:
+  - type: web
+    name: split-flap
+    runtime: python
+    region: frankfurt
+    plan: starter
+    buildCommand: >-
+      pip install uv==0.12.22 && uv sync --locked --no-dev &&
+      uv run --no-sync python manage.py collectstatic --noinput
+    # Runs before each deploy goes live; a failed migration stops the deploy.
+    preDeployCommand: uv run --no-sync python manage.py migrate --noinput
+    # The access log records each request's path, not its query string or
+    # referrer: the admin's user search puts a whole address in the URL.
+    startCommand: >-
+      uv run --no-sync gunicorn config.wsgi --bind 0.0.0.0:$PORT
+      --access-logfile -
+      --access-logformat '%(h)s %(t)s "%(m)s %(U)s %(H)s" %(s)s %(b)s %(L)s "%(a)s"'
+    # Answers 200 while the process is up; no sign-in, no database query.
+    # (/healthz also reads the database, for uptime monitors.)
+    healthCheckPath: /livez
+    envVars:
+      - fromGroup: titan
+      - fromGroup: split-flap
+
+  # Deletes expired idempotency records (24 hours) and sign-in requests (15 minutes).
+  - type: cron
+    name: split-flap-purge
+    runtime: python
+    region: frankfurt
+    plan: starter
+    schedule: "17 3 * * *"
+    buildCommand: pip install uv==0.12.22 && uv sync --locked --no-dev
+    startCommand: >-
+      uv run --no-sync python manage.py purge_idempotency_records --commit &&
+      uv run --no-sync python manage.py purge_sign_in_requests --commit
+    envVars:
+      - fromGroup: titan
+      - fromGroup: split-flap

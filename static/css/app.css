@@ -1,0 +1,382 @@
+/*
+ * static/css/app.css — the whole stylesheet. No build step.
+ *
+ * The design system (DESIGN.md): tokens on :root, components below that use
+ * only tokens, and every component on the design page at /app/design/.
+ * Dark mode redefines the tokens, never the components.
+ */
+
+:root {
+  /* Colour. Text tokens keep 4.5:1 on --bg and --card. */
+  --brand: #F5C22B;
+  --brand-text: #ffffff;
+  --brand-text-soft: rgb(255 255 255 / 35%);
+  --bg: #f6f7f9;
+  --card: #ffffff;
+  --text-1: #14171a;
+  --text-2: #4b5563;
+  --border: #d9dde3;
+  --warn-bg: #fff4d6;
+  --warn-text: #6b4e00;
+  --error: #b42318;
+
+  /* Type: one family, seven sizes. */
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --type-sm: 0.8125rem;
+  --type-base: 1rem;
+  --type-md: 1.0625rem;
+  --type-lg: 1.125rem;
+  --type-xl: 1.375rem;
+  --type-2xl: 1.5rem;
+  --type-3xl: 2rem;
+  --leading: 1.5;
+
+  /* Space: the shared 4px scale (DESIGN.md); use only these. */
+  --space-2xs: 2px;
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-2xl: 24px;
+  --space-3xl: 32px;
+
+  /* Shape. */
+  --radius-control: 8px;
+  --radius-card: 12px;
+  --radius-round: 50%;
+  --radius-icon: 22%;
+
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1115;
+    --card: #181b21;
+    --text-1: #eef1f4;
+    --text-2: #a3abb7;
+    --border: #2b3038;
+    --warn-bg: #3a2f10;
+    --warn-text: #f5d77a;
+    --error: #f97066;
+  }
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text-1);
+  font: var(--type-base) / var(--leading) var(--font);
+  -webkit-text-size-adjust: 100%;
+}
+
+h1 { font-size: var(--type-xl); margin: 0; }
+h2 { font-size: var(--type-md); margin: 0; }
+a { color: var(--brand); }
+.meta { color: var(--text-2); font-size: var(--type-sm); }
+.stack > * + * { margin-top: var(--space-lg); }
+
+/* Layout */
+
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  padding: var(--space-sm) var(--space-lg);
+  padding-top: max(var(--space-sm), env(safe-area-inset-top));
+  background: var(--brand);
+  color: var(--brand-text);
+}
+.app-header__name {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-right: auto;
+  color: inherit;
+  font-weight: 600;
+  text-decoration: none;
+}
+.app-header__icon { border-radius: var(--radius-icon); }
+.app-header form { margin: 0; }
+.app-header .button--quiet { color: inherit; }
+.app-header__link { color: inherit; font-weight: 600; text-decoration: none; }
+.app-main { max-width: 40rem; margin: 0 auto; padding: var(--space-lg); }
+.app-main > * + * { margin-top: var(--space-lg); }
+
+/* The website's footer (DESIGN.md): links and copyright. */
+.site-footer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  max-width: 40rem;
+  margin: var(--space-2xl) auto 0;
+  padding: var(--space-lg);
+  padding-bottom: max(var(--space-lg), env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border);
+  font-size: var(--type-sm);
+}
+.site-footer__links { display: flex; flex-wrap: wrap; column-gap: var(--space-lg); }
+/* 44px tall to tap, without spreading the row. */
+.site-footer__links a { min-height: 44px; display: inline-flex; align-items: center; color: var(--text-1); }
+.site-footer__legal { margin: 0; color: var(--text-2); }
+/* The same links on the app's account page, one to a row. */
+.site-links { list-style: none; margin: 0; padding: 0; }
+.site-links li + li { border-top: 1px solid var(--border); }
+.site-links a { min-height: 44px; display: flex; align-items: center; color: var(--text-1); }
+
+/* The front page (DESIGN.md, "The front page"), top to bottom. */
+
+.eyebrow {
+  margin: 0;
+  color: var(--text-2);
+  font-size: var(--type-sm);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+/* An eyebrow sits tight on what it labels, and opens a new part of a card with room. */
+.stack > .eyebrow + * { margin-top: var(--space-xs); }
+.stack > * + .eyebrow { margin-top: var(--space-2xl); }
+.hero { padding: var(--space-3xl) 0 var(--space-lg); }
+.hero h1 { font-size: var(--type-3xl); }
+.hero__lead { font-size: var(--type-lg); color: var(--text-2); margin: 0; }
+.hero__note { margin-top: var(--space-sm); color: var(--text-2); font-size: var(--type-sm); text-align: center; }
+
+/* The product, live: the app's own component with demo data, in a frame. */
+.showcase { margin: 0 0 var(--space-lg); }
+.showcase__screen {
+  overflow: hidden;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: 0 var(--space-lg);
+}
+.showcase__bar {
+  margin: 0 calc(-1 * var(--space-lg));
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--brand);
+  color: var(--brand-text);
+  font-weight: 600;
+}
+.showcase__caption { margin-top: var(--space-sm); color: var(--text-2); font-size: var(--type-sm); }
+
+/* How it works: three tiles, one under another on a phone. */
+.tiles { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-md); }
+.tile {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: var(--space-lg);
+}
+.tile__icon { width: 24px; height: 24px; color: var(--brand); }
+.tile__title { margin: var(--space-xs) 0 0; font-weight: 600; }
+.tile .meta { margin: var(--space-2xs) 0 0; }
+@media (min-width: 40rem) {
+  .tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* A made-up exchange with an AI chat, over the connector. */
+.chat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  border-radius: var(--radius-control);
+  background: var(--bg);
+  font-size: var(--type-sm);
+}
+.chat__you, .chat__reply { max-width: 85%; margin: 0; padding: var(--space-sm) var(--space-md); border-radius: var(--radius-card); }
+.chat__you { align-self: flex-end; background: var(--text-1); color: var(--card); }
+.chat__reply { background: var(--card); border: 1px solid var(--border); }
+
+/* Things to ask: quoted, not chips, since nothing here is tapped. */
+.asks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-xs); }
+.asks li { padding-left: var(--space-md); border-left: 2px solid var(--brand); }
+.asks li::before { content: "\201C"; }
+.asks li::after { content: "\201D"; }
+
+/* An address to copy, and its button (js/copy.js shows it). */
+.copy-field { display: flex; align-items: center; gap: var(--space-sm); }
+.copy-field__value {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-control);
+  background: var(--bg);
+  font-size: var(--type-sm);
+  overflow-wrap: anywhere;
+}
+
+/* The closing action: the promise again, and the same way in. */
+.closing { padding: var(--space-2xl) 0; text-align: center; }
+.closing h2 { font-size: var(--type-2xl); }
+
+.prose { max-width: 40rem; }
+.prose h2 { margin-top: var(--space-2xl); }
+.prose h3 { margin: var(--space-lg) 0 0; font-size: var(--type-base); }
+.prose p, .prose ul, .prose ol { margin: var(--space-sm) 0 0; }
+
+.notice {
+  margin: 0 0 var(--space-lg);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-control);
+  background: var(--warn-bg);
+  color: var(--warn-text);
+  font-size: var(--type-sm);
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: var(--space-lg);
+}
+
+/* Controls */
+
+.field { display: block; }
+.field__label { display: block; font-weight: 600; margin-bottom: var(--space-xs); }
+input[type="text"], input[type="email"], input[type="password"], textarea {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--card);
+  color: var(--text-1);
+  font: inherit;
+}
+.button {
+  display: inline-block;
+  min-height: 44px;
+  padding: var(--space-sm) var(--space-lg);
+  border: 0;
+  border-radius: var(--radius-control);
+  background: var(--brand);
+  color: var(--brand-text);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+.button--quiet { background: transparent; color: var(--brand); padding-inline: var(--space-sm); }
+.button--block { display: flex; align-items: center; justify-content: center; width: 100%; }
+.button--secondary { background: transparent; color: var(--brand); box-shadow: inset 0 0 0 2px var(--brand); }
+.button:disabled { opacity: 0.6; cursor: progress; }
+/* mcp_auth's pages (templates/mcp_auth/): its buttons carry no classes, so style them here */
+.mcp-auth form button { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 44px; margin-top: var(--space-sm); padding: var(--space-sm) var(--space-lg); border: 0; border-radius: var(--radius-control); background: var(--brand); color: var(--brand-text); font: inherit; font-weight: 600; cursor: pointer; }
+.mcp-auth .mcp-auth-cancel { background: transparent; color: var(--brand); box-shadow: inset 0 0 0 2px var(--brand); }
+.mcp-auth .mcp-auth-account p { color: var(--text-2); font-size: var(--type-sm); }
+.mcp-auth .mcp-auth-account button { display: inline; width: auto; margin: 0; padding: 0; background: none; color: var(--brand); font-weight: inherit; text-decoration: underline; }
+.input--code { max-width: 12rem; font-size: var(--type-2xl); letter-spacing: 0.3em; font-variant-numeric: tabular-nums; }
+/* The sign-in code as six boxes, one digit each (static/js/code_input.js) */
+.code-boxes { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--space-sm); max-width: 24rem; }
+input.code-box {
+  height: 56px;
+  padding: 0;
+  font-size: var(--type-2xl);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  caret-color: var(--brand);
+}
+input.code-box:focus { border-color: var(--brand); outline: 2px solid var(--brand); outline-offset: -1px; }
+.errorlist { color: var(--error); padding-left: var(--space-2xl); margin: var(--space-xs) 0 0; }
+.form-error { color: var(--error); margin: 0; }
+
+/* Lists of things with an action on each row (passkeys) */
+
+.item-list { list-style: none; margin: 0; padding: 0; }
+.item { display: flex; align-items: center; justify-content: space-between; gap: var(--space-lg); padding: var(--space-md) 0; }
+.item + .item { border-top: 1px solid var(--border); }
+.item__title { margin: 0; font-weight: 600; }
+.item .meta { margin: var(--space-2xs) 0 0; }
+
+/* Notes */
+
+.note-list { list-style: none; margin: 0; padding: 0; }
+.note + .note { border-top: 1px solid var(--border); }
+.note { padding: var(--space-md) 0; }
+.note__text { margin: 0; overflow-wrap: anywhere; }
+.note__meta { margin: var(--space-xs) 0 0; color: var(--text-2); font-size: var(--type-sm); }
+.note--pending { opacity: 0.7; }
+.note--failed .note__meta { color: var(--error); }
+.note__actions { display: flex; gap: var(--space-sm); margin-top: var(--space-sm); }
+.note--empty { color: var(--text-2); }
+/* A note waiting to send means the list isn't empty, whatever the server last said. */
+[data-pending-notes]:not(:empty) ~ #note-items .note--empty { display: none; }
+
+/* Offline and outbox state */
+
+.offline-banner {
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--warn-bg);
+  color: var(--warn-text);
+  font-size: var(--type-sm);
+}
+.outbox-status { font-size: var(--type-sm); }
+.outbox-status:empty { display: none; }
+
+/* The design page (apps/design): token samples, painted by js/design.js. */
+
+.ds-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+  gap: var(--space-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ds-token { display: flex; flex-direction: column; gap: var(--space-xs); font-size: var(--type-sm); }
+.ds-swatch { height: 3rem; border: 1px solid var(--border); border-radius: var(--radius-control); }
+.ds-corner { width: 4rem; height: 4rem; background: var(--bg); border: 1px solid var(--border); }
+.ds-depth { width: 6rem; height: 4rem; background: var(--card); border-radius: var(--radius-card); }
+.ds-bar { height: var(--space-md); background: var(--brand); }
+.ds-sample { margin: 0; }
+.ds-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-sm); }
+
+/* htmx request indicator (htmx's own injected styles are off, for the CSP) */
+
+.htmx-indicator { opacity: 0; transition: opacity 200ms ease-in; }
+.htmx-request .htmx-indicator, .htmx-request.htmx-indicator { opacity: 1; }
+
+/*
+ * Launch screen. Hidden unless js/launch_gate.js put .app-launching on <html>
+ * before first paint. js/launch_shell.js fades it out; the failsafe keyframe
+ * hides it at 10s whether or not any script ran, because a launch screen
+ * that never leaves is worse than none.
+ */
+
+.launch-shell { display: none; }
+.app-launching .launch-shell {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2xl);
+  background: var(--brand);
+  transition: opacity 300ms ease-out;
+  animation: launch-failsafe 0s linear 10s forwards;
+}
+.app-launching .launch-shell.launch-shell--done { opacity: 0; pointer-events: none; }
+.launch-shell__icon { border-radius: var(--radius-icon); }
+.launch-shell__spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--brand-text-soft);
+  border-top-color: var(--brand-text);
+  border-radius: var(--radius-round);
+  animation: spin 800ms linear infinite;
+}
+
+@keyframes launch-failsafe { to { visibility: hidden; opacity: 0; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .app-launching .launch-shell { transition: none; }
+  .launch-shell__spinner { animation-duration: 2400ms; }
+}
