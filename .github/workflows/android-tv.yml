@@ -109,13 +109,19 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           name: split-flap-tv
-      # Creates the tv-v<version> tag on the commit just built, unless a
-      # pushed tag started the run.
+      # Creates the tv-v<version> tag on the commit just built. A tag that
+      # already exists (a pushed tag started the run) must be on that commit,
+      # or the release would pair this APK with another commit's code.
       - name: Publish the release
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ needs.build.outputs.version }}
         run: |
+          tagged=$(gh api "repos/$GITHUB_REPOSITORY/commits/tv-v$VERSION" --jq .sha 2>/dev/null || true)
+          if [[ -n "$tagged" && "$tagged" != "$GITHUB_SHA" ]]; then
+            echo "::error::tv-v$VERSION already tags another commit ($tagged); pick a new version."
+            exit 1
+          fi
           gh release create "tv-v$VERSION" split-flap-tv-*.apk \
             --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
             --title "Split-Flap for Android TV $VERSION" \
