@@ -124,6 +124,13 @@ def add_board(display: Display, name: str) -> Board:
         return Board.objects.create(display=display, name=name, position=position)
 
 
+def set_sound(display: Display, on: bool) -> Display:
+    """Turn ``display``'s flap sound on or off; the TV follows at its next poll."""
+    display.sound = on
+    display.save(update_fields=["sound", "updated_at"])
+    return display
+
+
 def rename_board(board: Board, name: str) -> Board:
     """Give ``board`` a new name."""
     board.name = check_name(board.display, name, board)

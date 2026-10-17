@@ -5,6 +5,11 @@
  * characters, colour tiles and pictograms to reach each new message. It
  * polls the display's state (data-state-url) and flips only the tiles that
  * change. Boards show only what they're given: an empty board shows its name.
+ *
+ * The flap sound follows the display page's setting (state.sound) whenever it
+ * changes; the HUD's Sound button and the S key switch it for this screen
+ * meanwhile. Browsers start sound only after a tap or key press, so until then
+ * a sound that's on shows "Tap for sound".
  */
 (() => {
   const { COLS, ROWS, ICONS, DRUM, DRUM_POS, parse, message } = self.FlapText;
@@ -134,6 +139,8 @@
   // ---- Sound: a short synthesised clack per flap, throttled into a rattle ----
   const sound = {
     on: false, ctx: null, bufs: [], last: 0,
+    // Whether the browser is playing: it holds sound back until a tap or key press.
+    running() { return this.ctx?.state === 'running'; },
     init() {
       if (this.ctx) return;
       const Ctx = window.AudioContext || window.webkitAudioContext;
@@ -241,13 +248,31 @@
   const hud = document.getElementById('hud');
   const cycleBtn = document.getElementById('cycle');
   const soundBtn = document.getElementById('sound');
+  const soundHint = document.getElementById('soundHint');
 
   function setAuto(v) { auto = v; lastSwitch = Date.now(); cycleBtn.setAttribute('aria-pressed', v); }
-  function toggleSound() {
-    sound.init();
-    sound.ctx?.resume?.();
-    sound.on = !sound.on;
+  const canPlay = Boolean(window.AudioContext || window.webkitAudioContext);
+  function showSound() {
     soundBtn.setAttribute('aria-pressed', sound.on);
+    soundHint.hidden = !sound.on || sound.running() || !canPlay;
+  }
+  // Try to start the sound; most browsers let it start only from a tap or key press.
+  function startSound() {
+    if (!sound.on || sound.running()) return;
+    sound.init();
+    if (!sound.ctx) return;
+    sound.ctx.onstatechange = showSound;
+    sound.ctx.resume?.().catch(() => {});
+  }
+  function setSound(on) {
+    sound.on = on;
+    showSound();
+    startSound();
+  }
+  function toggleSound() {
+    // A press while the sound waits for one starts it, rather than turning it off.
+    if (sound.on && !sound.running()) startSound();
+    else setSound(!sound.on);
   }
   function toggleFs() {
     try {
@@ -275,6 +300,11 @@
   cycleBtn.addEventListener('click', () => setAuto(!auto));
   soundBtn.addEventListener('click', toggleSound);
   document.getElementById('fs').addEventListener('click', toggleFs);
+
+  // Any tap or key press starts a sound that's waiting, except the Sound button and S,
+  // which do it themselves.
+  const soundKey = e => e.target.closest?.('#sound') || (e.type === 'keydown' && e.key.toLowerCase() === 's');
+  ['pointerdown', 'keydown'].forEach(ev => addEventListener(ev, e => { if (!soundKey(e)) startSound(); }, { capture: true }));
 
   addEventListener('keydown', e => {
     poke();
@@ -311,6 +341,7 @@
   // ---- Live content: ask the server what each board shows ----
   let etag = null;
   let lastPosted = null;  // newest posted_at seen; null until the first answer
+  let soundSetting = null;  // the display page's sound setting, as last seen
   async function poll() {
     try {
       const response = await fetch(root.dataset.stateUrl, {
@@ -321,6 +352,10 @@
         etag = response.headers.get('ETag');
         const state = await response.json();
         setBoards(state.boards);
+        if (state.sound !== soundSetting) {
+          soundSetting = state.sound;
+          setSound(Boolean(state.sound));
+        }
         const newest = state.boards.reduce((a, b) => ((b.posted_at || '') > (a.posted_at || '') ? b : a), {});
         // Something new was posted since we last looked: turn to that board so it's seen.
         if (lastPosted !== null && newest.posted_at && newest.posted_at > lastPosted) {

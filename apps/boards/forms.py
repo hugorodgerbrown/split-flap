@@ -56,6 +56,16 @@ class BoardNameForm(forms.Form):
             raise forms.ValidationError(str(error)) from error
 
 
+class SoundForm(forms.Form):
+    """Whether the display plays the flap sound."""
+
+    sound = forms.ChoiceField(choices=[("on", "On"), ("off", "Off")])
+
+    def on(self) -> bool:
+        """Return whether the sound was turned on."""
+        return bool(self.cleaned_data["sound"] == "on")
+
+
 class MoveForm(forms.Form):
     """Which way to move a board in its display's order."""
 

@@ -23,6 +23,7 @@ from apps.boards.services import (
     move_board,
     post_message,
     rename_board,
+    set_sound,
 )
 from tests.factories import BoardFactory, DisplayFactory, UserFactory
 
@@ -225,3 +226,14 @@ def test_migration_names_boards_after_their_kind() -> None:
     executor.migrate(executor.loader.graph.leaf_nodes())
     names = Board.objects.filter(display_id=display.pk).values_list("name", flat=True)
     assert list(names) == ["Custom", "News", "Weather", "Travel"]
+
+
+def test_state_says_whether_the_sound_is_on(user: Any) -> None:
+    """The TV is told the sound setting, and turning it changes the version."""
+    display = display_for(user)
+    before = display.state()
+    assert before["sound"] is False
+    set_sound(display, True)
+    after = Display.objects.get(pk=display.pk).state()
+    assert after["sound"] is True
+    assert after["version"] != before["version"]

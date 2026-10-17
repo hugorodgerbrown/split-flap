@@ -47,6 +47,9 @@ class Display(BaseModel):
 
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     name = models.CharField(max_length=60, default="Living room")
+    # Whether the TV plays the flap sound. Browsers start it at the TV's first
+    # tap or key press, so "on" means "as soon as the browser allows".
+    sound = models.BooleanField(default=False)
 
     objects = DisplayQuerySet.as_manager()
 
@@ -62,8 +65,8 @@ class Display(BaseModel):
     def state(self) -> dict[str, object]:
         """Return what the TV needs to draw every board, and a version for caching."""
         boards = [board.as_json() for board in self.boards.all()]
-        version = hashlib.sha256(repr(boards).encode()).hexdigest()[:16]
-        return {"name": self.name, "boards": boards, "version": version}
+        version = hashlib.sha256(repr((self.sound, boards)).encode()).hexdigest()[:16]
+        return {"name": self.name, "sound": self.sound, "boards": boards, "version": version}
 
 
 class BoardQuerySet(models.QuerySet["Board"]):

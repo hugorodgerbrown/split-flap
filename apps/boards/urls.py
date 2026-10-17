@@ -8,6 +8,7 @@ app_name = "boards"
 
 urlpatterns = [
     path("display/", views.display_manage, name="manage"),
+    path("display/sound/", views.display_sound, name="sound"),
     path("display/boards/", views.board_add, name="add"),
     path("display/boards/<uuid:board_uuid>/", views.board_detail, name="board"),
     path("display/boards/<uuid:board_uuid>/message/", views.board_message, name="message"),

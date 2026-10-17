@@ -17,7 +17,7 @@ from django.templatetags.static import static
 from django.urls import reverse
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
-from apps.boards.forms import BoardNameForm, MessageForm, MoveForm
+from apps.boards.forms import BoardNameForm, MessageForm, MoveForm, SoundForm
 from apps.boards.layout import COLOURS, PICTOGRAMS, Tile, board_tiles
 from apps.boards.models import MAX_BOARDS, MAX_MESSAGE_LENGTH, Board, Display
 from apps.boards.services import (
@@ -28,6 +28,7 @@ from apps.boards.services import (
     move_board,
     post_message,
     rename_board,
+    set_sound,
 )
 from apps.core.decorators import signed_in_user
 from apps.public.connector import mcp_url
@@ -138,6 +139,17 @@ def display_manage(request: HttpRequest) -> HttpResponse:
     """The display page: a preview, the display's link, and its boards in order."""
     display = display_for(signed_in_user(request))
     return _manage(request, BoardNameForm(display))
+
+
+@require_POST
+@login_required
+def display_sound(request: HttpRequest) -> HttpResponse:
+    """Turn the display's flap sound on or off."""
+    display = display_for(signed_in_user(request))
+    form = SoundForm(request.POST)
+    if form.is_valid():
+        set_sound(display, form.on())
+    return redirect(reverse("boards:manage") + "#sound")
 
 
 @require_POST
