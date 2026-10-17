@@ -156,7 +156,7 @@ body.idle { cursor: none; }
 }
 .hud button:hover { color: var(--ui-fg); background: rgba(255,255,255,.05); }
 .hud button:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 1px; }
-.tabs button[aria-selected="true"] { color: #141414; background: var(--ui-fg); }
+.tabs button[aria-selected="true"], .tabs button[aria-pressed="true"] { color: #141414; background: var(--ui-fg); }
 .hud button[aria-pressed="true"] { color: var(--ui-fg); }
 .hud button[aria-pressed="true"] .dot { background: var(--ui-accent); box-shadow: 0 0 8px rgba(245,194,43,.6); }
 .dot { width: 7px; height: 7px; border-radius: 50%; background: #3d3b36; }
@@ -228,7 +228,7 @@ body.idle { cursor: none; }
   <span class="tag">Sample content</span>
   <div class="tabs" role="tablist" id="tabs"></div>
   <span class="sep"></span>
-  <div class="tabs" role="radiogroup" aria-label="Flip speed" id="speed" title="Flip speed (− and +)"></div>
+  <div class="tabs" role="group" aria-label="Flip speed" id="speed" title="Flip speed (− and +)"></div>
   <span class="sep"></span>
   <button id="cycle" type="button" aria-pressed="true" title="Cycle boards (Space)"><span class="dot"></span><span class="label-opt">Auto-cycle</span><span class="label-short" hidden>Auto</span></button>
   <button id="sound" type="button" aria-pressed="false" title="Flap sound (S)"><span class="dot"></span>Sound</button>
@@ -247,7 +247,7 @@ body.idle { cursor: none; }
   // Flip speed presets: each multiplies flap timing and the cascade delay.
   const SPEEDS = [{ name: 'Slow', k: 1.8 }, { name: 'Normal', k: 1 }, { name: 'Fast', k: 0.5 }];
   let speed = 1;
-  try { const v = +localStorage.getItem('splitflap.speed'); if (SPEEDS[v]) speed = v; } catch (e) {}
+  try { const v = localStorage.getItem('splitflap.speed'); if (v !== null && SPEEDS[+v]) speed = +v; } catch (e) {}
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // The drum: every symbol a flap can show, in the order it turns through them.
@@ -643,15 +643,14 @@ body.idle { cursor: none; }
   const speedGroup = document.getElementById('speed');
   SPEEDS.forEach((sp, i) => {
     const btn = document.createElement('button');
-    btn.type = 'button'; btn.role = 'radio'; btn.textContent = sp.name;
+    btn.type = 'button'; btn.textContent = sp.name;
     btn.addEventListener('click', () => setSpeed(i));
     speedGroup.appendChild(btn);
   });
   function setSpeed(i) {
     speed = Math.max(0, Math.min(SPEEDS.length - 1, i));
     [...speedGroup.children].forEach((b, j) => {
-      b.setAttribute('aria-checked', j === speed);
-      b.setAttribute('aria-selected', j === speed);
+      b.setAttribute('aria-pressed', j === speed);
     });
     try { localStorage.setItem('splitflap.speed', speed); } catch (e) {}
   }
