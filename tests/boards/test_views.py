@@ -2,6 +2,7 @@
 
 import uuid
 from typing import Any
+from urllib.parse import quote
 
 import pytest
 from django.test import Client
@@ -405,6 +406,19 @@ def test_picking_a_board_swaps_it_in_place(signed_in: Client) -> None:
         assert region in content
 
 
+def test_save_flips_the_preview_in_place(signed_in: Client, user: Any) -> None:
+    """With htmx, Save swaps the board in place, and the page loads the motion that flips it."""
+    board = display_for(user).boards.get()
+    content = signed_in.get(reverse("boards:manage")).content.decode()
+    assert (
+        f'hx-post="{reverse("boards:message", args=[board.uuid])}" hx-target="#board-view"'
+        in content
+    )
+    assert "js/flapmotion" in content
+    assert "js/board_motion" in content
+    assert 'data-name="Home" data-text="Home"' in content
+
+
 def test_display_controls_update_in_place(signed_in: Client, user: Any) -> None:
     """With htmx, each control posts and swaps its own card, so the page doesn't jump."""
     set_sound(display_for(user), True)
@@ -426,3 +440,17 @@ def test_display_controls_send_a_signed_out_htmx_post_to_sign_in(client: Client)
         plain = client.post(reverse(name))
         assert plain.status_code == 302
         assert plain["Location"] == sign_in
+
+
+@pytest.mark.django_db
+def test_picking_a_board_or_saving_signed_out_loads_sign_in(client: Client) -> None:
+    """Picking a board or saving once signed out loads sign-in, not an emptied page."""
+    board = BoardFactory.create()
+    manage = f"{reverse('boards:manage')}?board={board.uuid}"
+    response = client.get(manage, headers={"HX-Request": "true"})
+    assert response.status_code == 204
+    assert response["HX-Redirect"] == f"{reverse('accounts:sign_in')}?next={quote(manage)}"
+    assert client.get(manage)["Location"] == response["HX-Redirect"]
+    save = client.post(reverse("boards:message", args=[board.uuid]), headers={"HX-Request": "true"})
+    assert save.status_code == 204
+    assert save["HX-Redirect"] == f"{reverse('accounts:sign_in')}?next={reverse('boards:manage')}"

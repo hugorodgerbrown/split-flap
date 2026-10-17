@@ -7,6 +7,12 @@ changes message the same way, using the shared parts in
 `static/js/flapmotion.js`. Its flip is a lighter version, without the
 darkening or the bounce.
 
+The display page's preview flips with the TV's own `Board`, through
+`static/js/board_motion.js`, without sound. It turns from the live message
+to the new one on Save, when a Routine posts, and from blank on Replay.
+While you type it shows your draft without flipping. The motion isn't in
+the app's precached shell, so offline the preview is drawn still.
+
 ## One flip
 
 Each tile is four layers. Behind are two fixed halves: the top half of the

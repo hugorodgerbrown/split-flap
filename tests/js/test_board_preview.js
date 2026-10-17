@@ -176,19 +176,27 @@ describe('live', () => {
       vi.stubGlobal('fetch', vi.fn().mockResolvedValue(state('2026-10-17T07:00:00+00:00', 'Sunny')));
     });
 
-    it('puts a new post in the editor too, so Save stays off', async () => {
+    it('puts a new post in the editor too, so Save stays off, and says so for the flip', async () => {
+      const posted = vi.fn();
+      document.addEventListener('board:post', posted);
       BoardPreview.live(document.querySelector('[data-live-board]'));
       await vi.advanceTimersByTimeAsync(0);
+      document.removeEventListener('board:post', posted);
+      expect(posted.mock.calls[0][0].detail).toEqual({ from: 'Old', to: 'Sunny' });
       expect(textarea.value).toBe('Sunny');
       expect(shown()).toBe('SUNNY');
       expect(form.querySelector('[data-save]').disabled).toBe(true);
     });
 
     it('leaves a draft alone, but measures it against the new post', async () => {
+      const posted = vi.fn();
+      document.addEventListener('board:post', posted);
       textarea.value = 'Mine';
       textarea.dispatchEvent(new Event('input', { bubbles: true }));
       BoardPreview.live(document.querySelector('[data-live-board]'));
       await vi.advanceTimersByTimeAsync(0);
+      document.removeEventListener('board:post', posted);
+      expect(posted).not.toHaveBeenCalled();
       expect(textarea.value).toBe('Mine');
       expect(shown()).toBe('MINE');
       expect(document.querySelector('[data-posted] time')).not.toBeNull();

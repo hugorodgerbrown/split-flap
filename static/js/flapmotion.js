@@ -2,8 +2,9 @@
  * static/js/flapmotion.js — how the board moves: one flip, and a whole board
  * changing from one message to the next.
  *
- * Board draws the flap modules and flips them; the TV's board (splitflap.js)
- * and the staff tuning page (board_tuning.js) use it. The front page's board
+ * Board draws the flap modules and flips them; the TV's board (splitflap.js),
+ * the display page's preview (board_motion.js) and the staff tuning page
+ * (board_tuning.js) use it. The front page's board
  * (front_board.js) has its own lighter flip but shares nextFlap and
  * waveDelay, so it changes message the same way. Every number is in TUNING,
  * which the tuning page changes live. It reads the drum from
