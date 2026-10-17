@@ -1,0 +1,60 @@
+#!/usr/bin/env python3
+"""Draw the share card from the front page itself: the promise above the board.
+
+The card is what a link to the site unfurls as in a chat (DESIGN.md, "The
+front page"): 1200 by 630, the proposition and the product. The product is the
+board, so this photographs the real hero, its first demo board drawn as
+the server sends it, with the lede, button and caption left out so the
+headline and the board read at a chat's thumbnail size. Run it against a
+running server, then commit the card:
+
+    uv run python manage.py runserver
+    uv run --group e2e python bin/shoot-share-card [http://127.0.0.1:8000/]
+
+It replaces static/img/share-card.png, which bin/make-share-card (the
+template's placeholder) then leaves alone.
+"""
+
+import logging
+import os
+import sys
+from pathlib import Path
+
+from playwright.sync_api import sync_playwright
+
+logger = logging.getLogger(__name__)
+
+OUT = Path(__file__).resolve().parent.parent / "static" / "img" / "share-card.png"
+WIDTH, HEIGHT = 1200, 630
+
+# Only for the photograph: the hero, without what a thumbnail can't read.
+CARD_CSS = """
+.app-header, .hero__lead, .hero .button, .hero__note, .hero__caption { display: none !important; }
+.hero { box-sizing: border-box; height: 630px; padding: 52px 0 0; }
+.hero__body { max-width: none; }
+.hero--dark h1 { text-align: center; font-size: 60px; margin: 0; }
+.hero__board { max-width: 1040px; margin: 40px auto 0; }
+"""
+
+
+def shoot(url: str) -> None:
+    """Photograph the hero at ``url`` into ``OUT``."""
+    with sync_playwright() as playwright:
+        executable = os.environ.get("PLAYWRIGHT_CHROMIUM_EXECUTABLE")
+        browser = playwright.chromium.launch(executable_path=executable)
+        # Reduced motion: the board keeps the message the server drew.
+        # The page's CSP refuses injected styles; this one is ours, and only for the photograph.
+        page = browser.new_page(
+            viewport={"width": WIDTH, "height": HEIGHT}, reduced_motion="reduce", bypass_csp=True
+        )
+        page.goto(url)
+        page.add_style_tag(content=CARD_CSS)
+        page.evaluate("document.fonts.ready")
+        page.screenshot(path=OUT, clip={"x": 0, "y": 0, "width": WIDTH, "height": HEIGHT})
+        browser.close()
+    logger.info("Wrote %s", OUT)
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+    shoot(sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8000/")
