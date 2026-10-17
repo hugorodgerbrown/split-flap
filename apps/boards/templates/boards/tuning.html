@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% load static %}
+{# Tune the board's motion by eye (docs/board-animation.md). The sliders change static/js/flapmotion.js's TUNING on this page only; nothing is saved. #}
+{% block title %}Board tuning · {{ pwa.name }}{% endblock %}
+{% block main_class %} app-main--wide{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/board.css' %}"><link rel="stylesheet" href="{% static 'css/tuning.css' %}">{% endblock %}
+{% block extra_js %}
+  <script src="{% static 'js/flaptext.js' %}" defer></script>
+  <script src="{% static 'js/flapmotion.js' %}" defer></script>
+  <script src="{% static 'js/copy.js' %}" defer></script>
+  <script src="{% static 'js/board_tuning.js' %}" defer></script>
+{% endblock %}
+{% block content %}
+  <header class="stack">
+    <a class="back-link" href="{% url 'design:index' %}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Design system
+    </a>
+    <h1>Board tuning</h1>
+    <p class="meta">Move the sliders, then replay a change to see it. The numbers apply to this page only: to use them everywhere, copy them into static/js/flapmotion.js.</p>
+  </header>
+
+  <section class="stack" aria-label="The board">
+    <div class="board-fit">
+      <div class="board board--fluid" aria-hidden="true">
+        <div class="grid" data-tuning-grid></div>
+        <div class="engrave"><span data-tuning-name>Blank</span></div>
+      </div>
+    </div>
+    <noscript><p class="notice">The board needs JavaScript to flip.</p></noscript>
+  </section>
+
+  <form class="card stack" data-tuning data-boards="{{ boards_json }}">
+    <div class="split">
+      <label class="field"><span class="field__label">From</span>
+        <select name="from">{% for board in boards %}<option value="{{ forloop.counter0 }}"{% if board.name == "Morning" %} selected{% endif %}>{{ board.name }}</option>{% endfor %}</select>
+      </label>
+      <label class="field"><span class="field__label">To</span>
+        <select name="to">{% for board in boards %}<option value="{{ forloop.counter0 }}"{% if board.name == "Weather" %} selected{% endif %}>{{ board.name }}</option>{% endfor %}</select>
+      </label>
+    </div>
+    <div class="button-row">
+      <button class="button button--accent" type="button" data-replay>Replay</button>
+      <button class="button button--quiet" type="button" data-reset>Reset to the code's values</button>
+    </div>
+    {% for key, label, min, max, step, unit in sliders %}
+      <label class="setting">
+        <span class="setting__text"><span>{{ label }}</span><span class="meta"><output data-tuning-value="{{ key }}"></output> {{ unit }}</span></span>
+        <input type="range" name="{{ key }}" min="{{ min }}" max="{{ max }}" step="{{ step }}">
+      </label>
+    {% endfor %}
+  </form>
+
+  <section class="card stack" aria-labelledby="values-h">
+    <h2 id="values-h">Values</h2>
+    <p class="copy-field">
+      <code class="copy-field__value" id="tuning-values" data-tuning-values></code>
+      <button class="button button--secondary" type="button" data-copy="" data-copy-target="tuning-values" data-copied-label="Copied" hidden>Copy</button>
+    </p>
+    <p class="meta">Paste over DEFAULTS in static/js/flapmotion.js.</p>
+  </section>
+{% endblock %}
