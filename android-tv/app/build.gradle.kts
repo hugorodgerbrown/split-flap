@@ -66,9 +66,9 @@ android {
 
 dependencies {
     // Draws the pairing QR code; no network or Play services needed.
-    implementation("com.google.zxing:core:3.5.3")
+    implementation("com.google.zxing:core:3.5.4")
 
     testImplementation("junit:junit:4.13.2")
     // Android's org.json is a stub in unit tests; this is the real thing.
-    testImplementation("org.json:json:20240303")
+    testImplementation("org.json:json:20260814")
 }
