@@ -37,6 +37,7 @@ PRECACHE_STATIC = [
     "js/outbox.js",
     "js/pwa.js",
     "js/notes.js",
+    "js/copy.js",
     "icons/icon-192.png",
 ]
 

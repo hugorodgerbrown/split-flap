@@ -30,6 +30,7 @@
       <a class="app-header__name" href="{% url 'public:home' %}">{{ pwa.name }}</a>
       {% include "includes/_outbox_status.html" %}
       {% if user.is_authenticated %}
+        <a class="app-header__link" href="{% url 'boards:manage' %}">Display</a>
         <a class="app-header__link" href="{% url 'accounts:account' %}">Account</a>
       {% endif %}
     </header>
