@@ -1,0 +1,627 @@
+<title>Split-Flap Board</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600&family=Barlow:wght@500;600&display=swap">
+<style>
+/* Layout: one framed split-flap board centred on a dark wall, sized to the screen; a hidden control bar rises on input. */
+:root {
+  --wall: #070707;
+  --frame-hi: #1c1b1a;
+  --frame-lo: #0e0e0d;
+  --well: #090909;
+  --flap-top-a: #232323;
+  --flap-top-b: #1c1c1c;
+  --flap-bot-a: #191919;
+  --flap-bot-b: #141414;
+  --ink: #eeeae1;
+  --engrave: #4b4841;
+  --led-on: #f3ead2;
+  --ui-bg: rgba(22, 22, 21, 0.9);
+  --ui-line: #34322e;
+  --ui-fg: #eeeae1;
+  --ui-dim: #8f8a7f;
+  --ui-accent: #f5c22b;
+  --tile-r: #d8372f; --tile-o: #ee7a1f; --tile-y: #f5c22b; --tile-g: #2f9d5b;
+  --tile-b: #2069cf; --tile-v: #7a4bc8; --tile-w: #ece9e1;
+  --font-flap: "Barlow Semi Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --font-ui: "Barlow", "Helvetica Neue", Arial, sans-serif;
+  color-scheme: dark;
+  --cw: 40px; --ch: 55px; --gx: 5px; --gy: 6px; --pad: 34px; --fs: 34px; --r: 3px;
+}
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--wall); color: var(--ui-fg); overflow: hidden; font-family: var(--font-ui); }
+body.idle { cursor: none; }
+
+.stage {
+  height: 100%; box-sizing: border-box; display: grid; place-items: center;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 16px;
+  background: radial-gradient(ellipse at 50% 42%, #141312 0%, var(--wall) 70%);
+}
+
+/* The physical board */
+.board {
+  position: relative;
+  padding: var(--pad) var(--pad) calc(var(--pad) * 1.6);
+  background: linear-gradient(180deg, var(--frame-hi), var(--frame-lo));
+  border-radius: calc(var(--cw) * 0.32);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.8),
+    0 0 0 1px #000,
+    0 calc(var(--cw) * 0.6) calc(var(--cw) * 2) rgba(0, 0, 0, 0.75);
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), var(--cw));
+  grid-auto-rows: var(--ch);
+  column-gap: var(--gx);
+  row-gap: var(--gy);
+  padding: calc(var(--gy) * 0.8);
+  margin: calc(var(--gy) * -0.8);
+  background: var(--well);
+  border-radius: calc(var(--r) * 2);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.9);
+}
+.engrave {
+  position: absolute; left: var(--pad); right: var(--pad);
+  bottom: calc(var(--pad) * 0.5);
+  display: flex; align-items: center; justify-content: space-between;
+  font: 600 calc(var(--cw) * 0.3) / 1 var(--font-ui);
+  letter-spacing: 0.32em; text-transform: uppercase;
+  color: var(--engrave);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.05), 0 -1px 0 rgba(0, 0, 0, 0.9);
+}
+.leds { display: flex; gap: calc(var(--cw) * 0.28); }
+.led {
+  width: calc(var(--cw) * 0.14); height: calc(var(--cw) * 0.14); border-radius: 50%;
+  background: #262522; box-shadow: inset 0 1px 1px rgba(0,0,0,.9);
+  transition: background .4s, box-shadow .4s;
+}
+.led.on { background: var(--led-on); box-shadow: 0 0 calc(var(--cw) * 0.2) rgba(243, 234, 210, 0.55); }
+
+/* One flap module: two static halves, two moving leaves */
+.cell {
+  position: relative;
+  perspective: calc(var(--ch) * 4);
+  border-radius: var(--r);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+}
+.half, .leaf {
+  position: absolute; left: 0; right: 0; height: 50%;
+  overflow: hidden;
+  backface-visibility: hidden;
+}
+.top { top: 0; border-radius: var(--r) var(--r) 0 0; background: linear-gradient(180deg, var(--flap-top-a), var(--flap-top-b)); box-shadow: inset 0 1px 0 rgba(255,255,255,.045); }
+.bottom { bottom: 0; border-radius: 0 0 var(--r) var(--r); background: linear-gradient(180deg, var(--flap-bot-a), var(--flap-bot-b)); }
+.leaf { visibility: hidden; z-index: 2; will-change: transform; }
+.leaf.top { transform-origin: 50% 100%; }
+.leaf.bottom { transform-origin: 50% 0%; }
+.face {
+  position: absolute; left: 0; right: 0; height: var(--ch);
+  font: 600 var(--fs) / var(--ch) var(--font-flap);
+  text-align: center; color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.top .face { top: 0; }
+.bottom .face { bottom: 0; }
+.face.tile { inset: 0; height: auto; }
+.top .face.tile { bottom: 0; }
+.face.t-r { background: var(--tile-r); } .face.t-o { background: var(--tile-o); }
+.face.t-y { background: var(--tile-y); } .face.t-g { background: var(--tile-g); }
+.face.t-b { background: var(--tile-b); } .face.t-v { background: var(--tile-v); }
+.face.t-w { background: var(--tile-w); }
+.top .face.tile { box-shadow: inset 0 1px 0 rgba(255,255,255,.22); }
+.bottom .face.tile { filter: brightness(0.9); }
+/* The split between leaves, with the axle notches at each side */
+.cell::after {
+  content: ""; position: absolute; left: 0; right: 0; top: 50%; z-index: 3;
+  height: max(1px, calc(var(--ch) * 0.02)); transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.92);
+}
+.cell::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 50%; z-index: 3;
+  height: calc(var(--ch) * 0.075); transform: translateY(-50%);
+  background: linear-gradient(90deg, #050505 0 7%, transparent 7% 93%, #050505 93%);
+}
+
+/* Control bar */
+.hud {
+  position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: center;
+  max-width: calc(100% - 32px); box-sizing: border-box;
+  padding: 6px; border-radius: 14px;
+  background: var(--ui-bg); border: 1px solid var(--ui-line);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+  transition: opacity .35s, transform .35s;
+  z-index: 20;
+}
+.idle .hud { opacity: 0; transform: translateX(-50%) translateY(10px); pointer-events: none; }
+.tabs { display: flex; gap: 2px; padding: 2px; background: #0d0d0c; border-radius: 10px; }
+.hud button {
+  font: 500 15px/1 var(--font-ui); color: var(--ui-dim);
+  background: transparent; border: 0; border-radius: 8px;
+  padding: 10px 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 7px;
+  transition: color .15s, background .15s;
+}
+.hud button:hover { color: var(--ui-fg); background: rgba(255,255,255,.05); }
+.hud button:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 1px; }
+.tabs button[aria-selected="true"] { color: #141414; background: var(--ui-fg); }
+.hud button[aria-pressed="true"] { color: var(--ui-fg); }
+.hud button[aria-pressed="true"] .dot { background: var(--ui-accent); box-shadow: 0 0 8px rgba(245,194,43,.6); }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: #3d3b36; }
+.sep { width: 1px; align-self: stretch; margin: 6px 2px; background: var(--ui-line); }
+.hud svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.tag { font: 600 11px/1 var(--font-ui); letter-spacing: .14em; text-transform: uppercase; color: var(--ui-dim); padding: 0 10px; }
+
+/* Compose panel */
+.compose {
+  position: fixed; left: 50%; bottom: calc(86px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  width: min(560px, calc(100% - 32px)); box-sizing: border-box;
+  padding: 18px; border-radius: 14px;
+  background: var(--ui-bg); border: 1px solid var(--ui-line);
+  backdrop-filter: blur(10px); box-shadow: 0 12px 40px rgba(0,0,0,.6);
+  display: grid; gap: 12px; z-index: 21;
+}
+.compose label { font: 600 12px/1 var(--font-ui); letter-spacing: .14em; text-transform: uppercase; color: var(--ui-dim); }
+.compose textarea {
+  font: 600 22px/1.3 var(--font-flap); text-transform: uppercase; letter-spacing: .06em;
+  color: var(--ui-fg); background: #0d0d0c; border: 1px solid var(--ui-line); border-radius: 10px;
+  padding: 12px 14px; resize: none; min-height: 96px;
+}
+.compose textarea:focus { outline: 2px solid var(--ui-accent); outline-offset: 0; }
+.compose .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.compose .hint { font: 500 13px/1.4 var(--font-ui); color: var(--ui-dim); min-width: 0; }
+.compose .hint code { font: 600 13px var(--font-flap); color: var(--ui-fg); }
+.swatch { display: inline-block; width: 9px; height: 12px; border-radius: 2px; vertical-align: -1px; margin-right: 2px; }
+.compose .send {
+  font: 600 15px/1 var(--font-ui); color: #141414; background: var(--ui-accent);
+  border: 0; border-radius: 9px; padding: 11px 18px; cursor: pointer;
+}
+.compose .send:focus-visible { outline: 2px solid var(--ui-fg); outline-offset: 2px; }
+
+@media (max-width: 640px) {
+  .hud button { padding: 9px 10px; font-size: 14px; }
+  .hud .label-opt, .tag { display: none; }
+}
+</style>
+
+<div class="stage">
+  <div class="board" id="board">
+    <div class="grid" id="grid" aria-live="polite"></div>
+    <div class="engrave"><span id="boardName">Custom</span><span class="leds" id="leds"></span></div>
+  </div>
+</div>
+
+<div class="compose" id="compose" hidden>
+  <label for="msg">Message for the Custom board</label>
+  <textarea id="msg" maxlength="160" rows="3" placeholder="Dinner at eight"></textarea>
+  <div class="row">
+    <span class="hint">Colour tiles:
+      <code><span class="swatch" style="background:var(--tile-r)"></span>{r}</code>
+      <code><span class="swatch" style="background:var(--tile-o)"></span>{o}</code>
+      <code><span class="swatch" style="background:var(--tile-y)"></span>{y}</code>
+      <code><span class="swatch" style="background:var(--tile-g)"></span>{g}</code>
+      <code><span class="swatch" style="background:var(--tile-b)"></span>{b}</code>
+      <code><span class="swatch" style="background:var(--tile-v)"></span>{v}</code>
+      <code><span class="swatch" style="background:var(--tile-w)"></span>{w}</code>
+    </span>
+    <button class="send" id="send" type="button">Show on board</button>
+  </div>
+</div>
+
+<div class="hud" id="hud">
+  <span class="tag">Sample content</span>
+  <div class="tabs" role="tablist" id="tabs"></div>
+  <span class="sep"></span>
+  <button id="cycle" type="button" aria-pressed="true" title="Cycle boards (Space)"><span class="dot"></span><span class="label-opt">Auto-cycle</span><span class="label-short" hidden>Auto</span></button>
+  <button id="sound" type="button" aria-pressed="false" title="Flap sound (S)"><span class="dot"></span>Sound</button>
+  <button id="write" type="button" title="Write a message (W)">
+    <svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg><span class="label-opt">Write</span>
+  </button>
+  <button id="fs" type="button" title="Full screen (F)">
+    <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span class="label-opt">Full screen</span>
+  </button>
+</div>
+
+<script>
+(() => {
+  const COLS = 22, ROWS = 6;
+  const CYCLE_MS = 30000;
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // The drum: every symbol a flap can show, in the order it turns through them.
+  const DRUM = [' ', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ', ...'1234567890', ...'!@#$()-+&=;:\'"%,./?°',
+    '{r}', '{o}', '{y}', '{g}', '{b}', '{v}', '{w}'];
+  const DRUM_POS = new Map(DRUM.map((s, i) => [s, i]));
+  const ALIASES = { '’': "'", '‘': "'", '“': '"', '”': '"', '–': '-', '—': '-', '…': '.' };
+
+  function parse(str) {
+    const out = [];
+    for (const m of String(str).matchAll(/\{([roygbvw])\}|[\s\S]/gi)) {
+      if (m[1]) { out.push(`{${m[1].toLowerCase()}}`); continue; }
+      let ch = ALIASES[m[0]] || m[0].toUpperCase();
+      if (ch === '\n') ch = ' ';
+      out.push(DRUM_POS.has(ch) ? ch : ' ');
+    }
+    return out;
+  }
+  const len = s => parse(s).length;
+  const pad = n => ' '.repeat(Math.max(0, n));
+  const center = s => pad(Math.floor((COLS - len(s)) / 2)) + s;
+  const spread = (a, b) => a + pad(COLS - len(a) - len(b)) + b;
+  function wrap(text, width = COLS) {
+    const lines = [];
+    for (const para of String(text).split(/\n/)) {
+      let line = '';
+      for (const word of para.split(/\s+/).filter(Boolean)) {
+        const next = line ? line + ' ' + word : word;
+        if (len(next) <= width) { line = next; continue; }
+        if (line) lines.push(line);
+        line = word;
+        while (len(line) > width) { lines.push(parse(line).slice(0, width).join('')); line = parse(line).slice(width).join(''); }
+      }
+      lines.push(line);
+    }
+    return lines;
+  }
+  function message(text) {
+    const lines = wrap(text).slice(0, ROWS);
+    const top = Math.floor((ROWS - lines.length) / 2);
+    return Array.from({ length: ROWS }, (_, r) => center(lines[r - top] ?? ''));
+  }
+
+  const now = () => new Date();
+  const hhmm = d => d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  const dayDate = d => d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }).replace(',', '');
+  const STRIPE = Array.from({ length: COLS }, (_, i) => `{${'roygbv'[i % 6]}}`).join('');
+
+  // ---- Boards (sample content until the live feeds are wired up) ----
+  let customText = null;
+  try { customText = localStorage.getItem('splitflap.custom'); } catch (e) {}
+
+  function greeting() {
+    const h = now().getHours();
+    return h < 12 ? 'GOOD MORNING' : h < 18 ? 'GOOD AFTERNOON' : 'GOOD EVENING';
+  }
+
+  const HEADLINES = [
+    'YOUR SPLIT FLAP BOARD IS NOW LIVE ON THE TV',
+    'MESSAGES FROM CLAUDE ARRIVE OVER MCP NEXT',
+    'LIVE NEWS WEATHER AND TRAVEL FEEDS TO FOLLOW',
+    'PRESS LEFT OR RIGHT TO SWITCH BOARDS',
+  ];
+
+  const DESTS = [
+    ['CAMBRIDGE', '9', 'g'], ['YORK', '4', 'g'], ['LEEDS', '1', 'y'], ['EDINBURGH', '2', 'g'],
+    ['ELY', '10', 'g'], ['NEWCASTLE', '3', 'r'], ['PETERBORO', '6', 'g'], ['DONCASTER', '5', 'y'],
+  ];
+  const SLOTS = [4, 15, 22, 30, 45, 52];
+  function departures(count) {
+    const t = now();
+    const out = [];
+    const base = new Date(t); base.setMinutes(0, 0, 0);
+    for (let h = 0; out.length < count && h < 3; h++) {
+      for (let k = 0; k < SLOTS.length && out.length < count; k++) {
+        const d = new Date(base.getTime() + h * 3600e3 + SLOTS[k] * 60e3);
+        if (d <= t) continue;
+        const [dest, plat, status] = DESTS[(d.getHours() * SLOTS.length + k) % DESTS.length];
+        out.push({ time: hhmm(d), dest, plat, status });
+      }
+    }
+    return out;
+  }
+
+  const BOARDS = [
+    { name: 'Custom', render: () => customText ? message(customText) : [
+        '', center(greeting()), center('HUGO'), '', center('THIS BOARD IS ALL YOURS'), STRIPE] },
+    { name: 'News', render: () => {
+        const i = Math.floor(Date.now() / 12000) % HEADLINES.length;
+        const body = wrap(HEADLINES[i]).slice(0, 3);
+        while (body.length < 3) body.push('');
+        return [spread('{r} TOP STORIES', hhmm(now())), '', ...body, spread('', `${i + 1}/${HEADLINES.length}`)];
+      } },
+    { name: 'Weather', render: () => [
+        spread('LONDON', dayDate(now()).toUpperCase()),
+        '',
+        spread('NOW 14°', 'PART CLOUDY'),
+        spread('HIGH 16°', 'LOW 9°'),
+        spread('{b}{b} RAIN AFTER 3PM', ''),
+        spread('WIND SW 12MPH', 'UV 2'),
+      ] },
+    { name: 'Travel', render: () => {
+        const rows = departures(4).map(d =>
+          (d.time + ' ' + d.dest).padEnd(16) + ('P' + d.plat).padEnd(5) + `{${d.status}}`);
+        return [spread('KINGS CROSS', hhmm(now())), ...rows, center('{g} ON TIME  {y} DELAYED')];
+      } },
+  ];
+
+  // ---- Flap cells ----
+  const grid = document.getElementById('grid');
+  grid.style.setProperty('--cols', COLS);
+
+  function makeHalf(cls) {
+    const el = document.createElement('div');
+    el.className = cls;
+    const face = document.createElement('span');
+    face.className = 'face';
+    el.appendChild(face);
+    return el;
+  }
+  function setFace(half, sym) {
+    const face = half.firstChild;
+    if (sym.length === 3) { face.textContent = ''; face.className = `face tile t-${sym[1]}`; }
+    else { face.textContent = sym; face.className = 'face'; }
+  }
+
+  const TOP_FALL = [
+    { transform: 'rotateX(0deg)', filter: 'brightness(1)' },
+    { transform: 'rotateX(-90deg)', filter: 'brightness(0.45)' },
+  ];
+  const BOTTOM_FALL = [
+    { transform: 'rotateX(90deg)', filter: 'brightness(0.5)', offset: 0, easing: 'cubic-bezier(.4,0,1,1)' },
+    { transform: 'rotateX(0deg)', filter: 'brightness(1)', offset: 0.7, easing: 'ease-out' },
+    { transform: 'rotateX(11deg)', filter: 'brightness(0.95)', offset: 0.84, easing: 'ease-in' },
+    { transform: 'rotateX(0deg)', filter: 'brightness(1)', offset: 1 },
+  ];
+
+  class Cell {
+    constructor() {
+      this.el = document.createElement('div');
+      this.el.className = 'cell';
+      this.sTop = makeHalf('half top');
+      this.sBot = makeHalf('half bottom');
+      this.lTop = makeHalf('leaf top');
+      this.lBot = makeHalf('leaf bottom');
+      this.el.append(this.sTop, this.sBot, this.lTop, this.lBot);
+      this.cur = ' ';
+      this.target = ' ';
+      this.running = false;
+      // Each module's motor runs at a slightly different speed, like the real thing.
+      this.ms = 48 + Math.random() * 20;
+      [this.sTop, this.sBot, this.lTop, this.lBot].forEach(h => setFace(h, ' '));
+    }
+    set(sym, delay) {
+      this.target = sym;
+      if (this.running || this.cur === sym) return;
+      this.running = true;
+      setTimeout(() => this.run(), delay);
+    }
+    async run() {
+      while (this.cur !== this.target) {
+        if (reduceMotion || document.hidden) { this.snap(this.target); break; }
+        await this.flip(DRUM[(DRUM_POS.get(this.cur) + 1) % DRUM.length]);
+      }
+      this.running = false;
+    }
+    snap(sym) {
+      [this.sTop, this.sBot].forEach(h => setFace(h, sym));
+      this.cur = sym;
+    }
+    async flip(next) {
+      const d = this.ms;
+      setFace(this.sTop, next);
+      setFace(this.lTop, this.cur);
+      setFace(this.lBot, next);
+      const a = this.lTop.animate(TOP_FALL, { duration: d * 0.42, easing: 'cubic-bezier(.55,0,1,.45)', fill: 'forwards' });
+      this.lTop.style.visibility = 'visible';
+      await a.finished;
+      this.lTop.style.visibility = 'hidden';
+      a.cancel();
+      const b = this.lBot.animate(BOTTOM_FALL, { duration: d * 0.58, fill: 'forwards' });
+      this.lBot.style.visibility = 'visible';
+      setTimeout(() => sound.clack(), d * 0.4);
+      await b.finished;
+      setFace(this.sBot, next);
+      this.lBot.style.visibility = 'hidden';
+      b.cancel();
+      this.cur = next;
+    }
+  }
+
+  const cells = [];
+  for (let i = 0; i < COLS * ROWS; i++) {
+    const c = new Cell();
+    cells.push(c);
+    grid.appendChild(c.el);
+  }
+
+  let shown = '';
+  function show(lines) {
+    const rows = Array.from({ length: ROWS }, (_, r) => {
+      const syms = parse(lines[r] ?? '').slice(0, COLS);
+      while (syms.length < COLS) syms.push(' ');
+      return syms;
+    });
+    const key = rows.map(r => r.join('')).join('|');
+    if (key === shown) return;
+    shown = key;
+    rows.forEach((syms, r) => syms.forEach((sym, c) => {
+      // A left-to-right wave with a little scatter.
+      cells[r * COLS + c].set(sym, c * 32 + r * 14 + Math.random() * 70);
+    }));
+  }
+
+  // ---- Sound: a short synthesised clack per flap, throttled into a rattle ----
+  const sound = {
+    on: false, ctx: null, bufs: [], last: 0,
+    init() {
+      if (this.ctx) return;
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+      this.ctx = new Ctx();
+      const sr = this.ctx.sampleRate;
+      for (let v = 0; v < 4; v++) {
+        const n = Math.floor(sr * 0.03);
+        const buf = this.ctx.createBuffer(1, n, sr);
+        const data = buf.getChannelData(0);
+        const tone = 1500 + v * 260;
+        for (let i = 0; i < n; i++) {
+          const t = i / sr;
+          data[i] = (Math.random() * 2 - 1) * Math.exp(-t * 380) * 0.7
+            + Math.sin(2 * Math.PI * tone * t) * Math.exp(-t * 700) * 0.35
+            + Math.sin(2 * Math.PI * 180 * t) * Math.exp(-t * 120) * 0.3;
+        }
+        this.bufs.push(buf);
+      }
+      this.out = this.ctx.createGain();
+      this.out.gain.value = 0.5;
+      const lp = this.ctx.createBiquadFilter();
+      lp.type = 'lowpass'; lp.frequency.value = 6000;
+      this.out.connect(lp).connect(this.ctx.destination);
+    },
+    clack() {
+      if (!this.on || !this.ctx) return;
+      const t = this.ctx.currentTime;
+      if (t - this.last < 0.005) return;
+      this.last = t;
+      const src = this.ctx.createBufferSource();
+      src.buffer = this.bufs[(Math.random() * this.bufs.length) | 0];
+      src.playbackRate.value = 0.85 + Math.random() * 0.3;
+      const g = this.ctx.createGain();
+      g.gain.value = 0.08 + Math.random() * 0.08;
+      src.connect(g).connect(this.out);
+      src.start();
+    },
+  };
+
+  // ---- Sizing: fit the board to the screen ----
+  function fit() {
+    const stage = document.querySelector('.stage');
+    const cs = getComputedStyle(stage);
+    const availW = stage.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const availH = stage.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    const R = { ch: 1.38, gx: 0.12, gy: 0.16, pad: 0.85 };
+    const unitsW = COLS + (COLS - 1) * R.gx + 2 * R.pad;
+    const unitsH = ROWS * R.ch + (ROWS - 1) * R.gy + R.pad * 2.6;
+    const cw = Math.max(8, Math.min(availW / unitsW, (availH * 0.94) / unitsH));
+    const s = document.documentElement.style;
+    s.setProperty('--cw', cw + 'px');
+    s.setProperty('--ch', cw * R.ch + 'px');
+    s.setProperty('--gx', cw * R.gx + 'px');
+    s.setProperty('--gy', cw * R.gy + 'px');
+    s.setProperty('--pad', cw * R.pad + 'px');
+    s.setProperty('--fs', cw * R.ch * 0.66 + 'px');
+    s.setProperty('--r', Math.max(1, cw * 0.07) + 'px');
+  }
+  addEventListener('resize', fit);
+  fit();
+
+  // ---- Board switching ----
+  const tabs = document.getElementById('tabs');
+  const leds = document.getElementById('leds');
+  const nameEl = document.getElementById('boardName');
+  let active = 0, auto = true, lastSwitch = Date.now();
+
+  BOARDS.forEach((b, i) => {
+    const btn = document.createElement('button');
+    btn.type = 'button'; btn.role = 'tab'; btn.textContent = b.name;
+    btn.addEventListener('click', () => select(i));
+    tabs.appendChild(btn);
+    const led = document.createElement('span');
+    led.className = 'led';
+    leds.appendChild(led);
+  });
+
+  function select(i) {
+    active = (i + BOARDS.length) % BOARDS.length;
+    lastSwitch = Date.now();
+    [...tabs.children].forEach((t, j) => t.setAttribute('aria-selected', j === active));
+    [...leds.children].forEach((l, j) => l.classList.toggle('on', j === active));
+    nameEl.textContent = BOARDS[active].name;
+    show(BOARDS[active].render());
+  }
+
+  setInterval(() => {
+    if (auto && Date.now() - lastSwitch > CYCLE_MS && compose.hidden) select(active + 1);
+    else show(BOARDS[active].render());
+  }, 1000);
+
+  // ---- Controls ----
+  const hud = document.getElementById('hud');
+  const compose = document.getElementById('compose');
+  const msg = document.getElementById('msg');
+  const cycleBtn = document.getElementById('cycle');
+  const soundBtn = document.getElementById('sound');
+
+  function setAuto(v) { auto = v; lastSwitch = Date.now(); cycleBtn.setAttribute('aria-pressed', v); }
+  function toggleSound() {
+    sound.init();
+    sound.ctx?.resume?.();
+    sound.on = !sound.on;
+    soundBtn.setAttribute('aria-pressed', sound.on);
+  }
+  function toggleFs() {
+    try {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else document.documentElement.requestFullscreen?.().catch(() => {});
+    } catch (e) {}
+  }
+  function openCompose() {
+    compose.hidden = false;
+    msg.value = customText || '';
+    msg.focus();
+    wake();
+  }
+  function closeCompose() { compose.hidden = true; }
+  function send() {
+    const text = msg.value.trim();
+    customText = text || null;
+    try { text ? localStorage.setItem('splitflap.custom', text) : localStorage.removeItem('splitflap.custom'); } catch (e) {}
+    closeCompose();
+    select(0);
+  }
+
+  cycleBtn.addEventListener('click', () => setAuto(!auto));
+  soundBtn.addEventListener('click', toggleSound);
+  document.getElementById('fs').addEventListener('click', toggleFs);
+  document.getElementById('write').addEventListener('click', () => compose.hidden ? openCompose() : closeCompose());
+  document.getElementById('send').addEventListener('click', send);
+  msg.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+    if (e.key === 'Escape') closeCompose();
+    e.stopPropagation();
+  });
+
+  addEventListener('keydown', e => {
+    poke();
+    if (e.target.closest?.('button') && (e.key === 'Enter' || e.key === ' ')) return;
+    const k = e.key.toLowerCase();
+    if (k === 'arrowright') select(active + 1);
+    else if (k === 'arrowleft') select(active - 1);
+    else if (/^[1-9]$/.test(k) && +k <= BOARDS.length) select(+k - 1);
+    else if (k === ' ') { e.preventDefault(); setAuto(!auto); }
+    else if (k === 's') toggleSound();
+    else if (k === 'f') toggleFs();
+    else if (k === 'w') { e.preventDefault(); openCompose(); }
+    else if (k === 'escape') closeCompose();
+  });
+
+  // Hide the controls and cursor when nobody is touching anything.
+  let idleTimer;
+  function poke() {
+    document.body.classList.remove('idle');
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => { if (compose.hidden) document.body.classList.add('idle'); }, 3500);
+  }
+  ['mousemove', 'pointerdown', 'touchstart'].forEach(ev => addEventListener(ev, poke, { passive: true }));
+  poke();
+
+  // Keep the TV awake while the board is showing.
+  let lock = null;
+  async function wake() {
+    try { if (!lock && navigator.wakeLock) { lock = await navigator.wakeLock.request('screen'); lock.addEventListener('release', () => { lock = null; }); } } catch (e) {}
+  }
+  addEventListener('pointerdown', wake, { once: true });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) wake(); });
+
+  const start = () => setTimeout(() => select(0), 400);
+  (document.fonts?.ready || Promise.resolve()).then(start, start);
+})();
+</script>
