@@ -30,11 +30,13 @@ apps/mcp/        the MCP endpoint (/mcp) and its tools; auth is mcp-auth.
                  tool names with Tool(ui=...), docs/decisions/);
                  events.py counts each tool call in fivebar as a server
                  event while FIVEBAR_DOMAIN and FIVEBAR_TOKEN are set
+android-tv/      the Android TV app: a Kotlin shell that pairs by code and
+                 shows /d/<uuid>/ full screen (docs/android-tv.md)
 templates/       base.html (the app, /app/), public_base.html, includes
 static/js/       plain JavaScript, classic scripts, no build step
 static/css/      app.css: the design system's tokens on :root, components
                  below (DESIGN.md)
-docs/            accounts, testing, user-testing, onboarding-tour, pwa,
+docs/            accounts, android-tv, testing, user-testing, onboarding-tour, pwa,
                  security, performance, decisions/
 .claude/skills/  writing the Titan docs kept in Linear (research, user
                  testing script, blog post), each with a length setting
