@@ -196,7 +196,7 @@ def test_manage_names_the_selected_board_once(signed_in: Client, user: Any) -> N
     """The list marks the selected board; the strip and editor don't repeat its name."""
     weather = BoardFactory.create(display=display_for(user), name="Weather", position=1)
     content = signed_in.get(reverse("boards:manage"), {"board": str(weather.uuid)}).content.decode()
-    assert f'href="?board={weather.uuid}" aria-current="page">Weather</a>' in content
+    assert f'hx-get="?board={weather.uuid}" aria-current="page">Weather</a>' in content
     assert content.count(">Weather<") == 2  # the list, and the board's own engraving
     assert "Rename" not in content
 
@@ -391,6 +391,18 @@ def test_tv_page_carries_the_sound_timing_and_replays(client: Client, user: Any)
     replay(display)
     content = client.get(reverse("tv:board", args=[display.uuid])).content
     assert b'data-sound-delay="200" data-replays="1"' in content
+
+
+def test_picking_a_board_swaps_it_in_place(signed_in: Client) -> None:
+    """With htmx, picking a board swaps its view, editor and the list, and keeps the page put.
+
+    A newer pick replaces one still loading, so a slow answer can't land last.
+    """
+    content = signed_in.get(reverse("boards:manage")).content.decode()
+    assert 'hx-select="#board-view" hx-select-oob="#editor,#boards"' in content
+    assert 'hx-swap="outerHTML show:none" hx-push-url="true" hx-sync="this:replace"' in content
+    for region in ('id="board-view"', 'id="editor"', 'id="boards"'):
+        assert region in content
 
 
 def test_display_controls_update_in_place(signed_in: Client, user: Any) -> None:

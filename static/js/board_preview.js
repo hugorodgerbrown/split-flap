@@ -4,14 +4,11 @@
  * The server draws each board as it stands (boards/_flapboard.html), so the
  * page works without this file. With it:
  *
- * - the preview follows the board editor's message box as you type, says
- *   "Draft" while it differs from what the display shows, counts the rows,
- *   and keeps Save off until there's a change that fits;
- * - the palette shows, and each key adds its code where the cursor is;
- * - the preview asks the server what the board shows, so a Routine's post
- *   appears without a reload, in the editor too unless you're mid-draft.
- *
- * Layout comes from flaptext.js, which the TV's board uses too.
+ * - the preview follows the editor as you type, says "Draft" until saved,
+ *   counts the rows, and keeps Save off until a change fits;
+ * - each palette key adds its code at the cursor;
+ * - a Routine's post appears without a reload, in the editor too unless
+ *   you're mid-draft. Layout comes from flaptext.js.
  */
 (function () {
   'use strict';
@@ -171,10 +168,18 @@
     return setInterval(poll, Number(status.dataset.pollSeconds) * 1000);
   }
 
+  const seen = new WeakSet();
+  let timer;
+  // Wire up what's new: at load, and after htmx swaps in another board.
   function start() {
-    document.querySelectorAll('form[data-board-editor]').forEach(editor);
-    document.querySelectorAll('[data-live-board]').forEach(live);
+    document.querySelectorAll('form[data-board-editor], [data-live-board]').forEach(function (el) {
+      if (seen.has(el)) return;
+      seen.add(el);
+      if (el.dataset.liveBoard === undefined) editor(el);
+      else { clearInterval(timer); timer = live(el); }
+    });
   }
+  document.addEventListener('htmx:afterSettle', start);
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
   else start();
