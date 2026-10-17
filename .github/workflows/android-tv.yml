@@ -1,6 +1,8 @@
 # The Android TV app (android-tv/): unit tests, lint and a release APK on
-# every change to it. A tag like tv-v0.1.0 also publishes the APK as a
-# GitHub release, for sideloading onto a TV.
+# every change to it. Running it by hand on main with a version (Actions →
+# Android TV → Run workflow → 0.1.0) publishes the APK as a GitHub
+# release, tagged tv-v0.1.0, for sideloading onto a TV; pushing a tag like
+# tv-v0.1.0 does the same.
 #
 # The APK is signed with the key in the SPLITFLAP_* secrets, so each build
 # installs over the last. Without them it is signed with a throwaway debug
@@ -15,9 +17,14 @@ on:
   pull_request:
     paths: ["android-tv/**", ".github/workflows/android-tv.yml"]
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Release this version, like 0.1.0 (leave empty to only build)"
+        required: false
+        type: string
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -29,11 +36,39 @@ jobs:
     defaults:
       run:
         working-directory: android-tv
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     env:
       SPLITFLAP_VERSION_CODE: ${{ github.run_number }}
-      SPLITFLAP_VERSION_NAME: ${{ startsWith(github.ref, 'refs/tags/tv-v') && github.ref_name || format('0.1.{0}', github.run_number) }}
     steps:
       - uses: actions/checkout@v7
+      # The version the app reports and the APK is named after: the tag
+      # without its tv-v, the version typed into Run workflow, or 0.1.<run>.
+      - name: Choose the version
+        id: version
+        working-directory: .
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/tv-v* ]]; then
+            version="${GITHUB_REF_NAME#tv-v}"
+          elif [[ -n "$INPUT_VERSION" ]]; then
+            if [[ "$GITHUB_REF" != refs/heads/main ]]; then
+              echo "::error::Release from main only."
+              exit 1
+            fi
+            version="$INPUT_VERSION"
+          else
+            version="0.1.$GITHUB_RUN_NUMBER"
+          fi
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::A version is three numbers, like 0.1.0, not '$version'."
+            exit 1
+          fi
+          echo "SPLITFLAP_VERSION_NAME=$version" >> "$GITHUB_ENV"
+          if [[ "$GITHUB_REF" == refs/tags/tv-v* || -n "$INPUT_VERSION" ]]; then
+            echo "version=$version" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
@@ -65,7 +100,7 @@ jobs:
           path: android-tv/app/build/reports/
 
   release:
-    if: startsWith(github.ref, 'refs/tags/tv-v')
+    if: needs.build.outputs.version != ''
     needs: build
     runs-on: ubuntu-latest
     permissions:
@@ -74,7 +109,14 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           name: split-flap-tv
+      # Creates the tv-v<version> tag on the commit just built, unless a
+      # pushed tag started the run.
       - name: Publish the release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" split-flap-tv-*.apk --repo "$GITHUB_REPOSITORY" --title "Split-Flap for Android TV $GITHUB_REF_NAME" --notes "Sideload this APK onto your Android TV or Google TV (docs/android-tv.md)."
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          gh release create "tv-v$VERSION" split-flap-tv-*.apk \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "Split-Flap for Android TV $VERSION" \
+            --notes "Sideload this APK onto your Android TV or Google TV (docs/android-tv.md)."
