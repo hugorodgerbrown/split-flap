@@ -36,4 +36,11 @@ describe('front board launch', () => {
     expect(tops()).toEqual(['face|H', 'face|I', 'face tile t-r|']);
     expect(Element.prototype.animate).toHaveBeenCalled();
   });
+
+  it('leaves every face of a landed tile showing it, so no old face peeps out', () => {
+    for (const el of document.querySelectorAll('.cell')) {
+      const faces = [...el.querySelectorAll('.face')].map(f => f.className + '|' + f.textContent);
+      expect(new Set(faces).size).toBe(1);
+    }
+  });
 });

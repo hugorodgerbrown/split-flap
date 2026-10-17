@@ -70,7 +70,12 @@
     cell.lTop.animate(TOP_FALL, { duration: d * 0.45, easing: 'ease-in', fill: 'forwards' });
     cell.lBot.animate(BOTTOM_FALL, { duration: d * 0.55, delay: d * 0.45, easing: 'ease-out', fill: 'both' });
     cell.cur = next;
-    return new Promise(r => setTimeout(r, d));
+    // Once the leaves have landed, every face shows the new symbol, so the
+    // old one (a cream tile, say) can't peep out from under a leaf's edge.
+    return new Promise(r => setTimeout(() => {
+      if (cell.cur === next) { setFace(sBot, next); setFace(lTop, next); }
+      r();
+    }, d));
   }
 
   async function run(cell) {
