@@ -1,7 +1,7 @@
 """TV pairings: a short code a TV shows, claimed by the display's owner.
 
 A TV app starts a pairing and shows its code; the owner types it on their
-phone; the TV's next poll is answered with the display's link, once. Only
+phone; the TV's next poll is answered with the display's link. Only
 hashes of the code and the poll token are stored, so a copy of the
 database links no TV to anything.
 """
@@ -31,8 +31,8 @@ class TVPairing(BaseModel):
     """One TV asking to be linked to a display.
 
     ``claimed_at`` is when the owner entered the code (and ``display`` is
-    theirs); ``delivered_at`` is when the TV collected the link, after which
-    the pairing answers nothing more.
+    theirs); ``delivered_at`` is when the TV first collected the link. The
+    TV can collect it again until the pairing expires, then it is gone.
     """
 
     token_hash = models.CharField(max_length=64, unique=True)

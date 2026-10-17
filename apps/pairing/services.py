@@ -87,7 +87,13 @@ def claim(code: str, display: Display) -> TVPairing | None:
     claimed = (
         TVPairing.objects.live()
         .filter(pk=pairing.pk)
-        .update(display=display, claimed_at=now, updated_at=now)
+        # A fresh expiry, so the TV has the full time to collect the link.
+        .update(
+            display=display,
+            claimed_at=now,
+            expires_at=now + timedelta(minutes=PAIRING_MINUTES),
+            updated_at=now,
+        )
     )
     if claimed != 1:
         return None
@@ -102,13 +108,15 @@ def find(token: str) -> TVPairing | None:
 
 
 def collect(pairing: TVPairing) -> Display | None:
-    """Hand over the claimed display, once; None if it's unclaimed or already collected."""
-    if pairing.claimed_at is None or pairing.display is None:
+    """Hand over the claimed display; None if it's unclaimed or has expired.
+
+    The TV may ask again until the pairing expires, so a reply lost on the
+    way doesn't strand it; ``delivered_at`` records the first hand-over.
+    """
+    if pairing.claimed_at is None or pairing.display is None or pairing.is_expired():
         return None
     now = timezone.now()
-    collected = TVPairing.objects.filter(
-        pk=pairing.pk, claimed_at__isnull=False, delivered_at__isnull=True
-    ).update(delivered_at=now, updated_at=now)
-    if collected != 1:
-        return None
+    TVPairing.objects.filter(pk=pairing.pk, delivered_at__isnull=True).update(
+        delivered_at=now, updated_at=now
+    )
     return pairing.display

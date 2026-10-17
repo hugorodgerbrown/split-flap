@@ -14,7 +14,9 @@ The TV asks for a pairing (`POST /d/pair/`) and shows a six-character code
 and a QR code. Its owner, signed in on their phone, types the code at
 `/app/display/pair/` (the QR code opens that page with the code filled
 in). The TV polls `/d/pair/<token>/` every three seconds and, once the code
-is claimed, is handed the display's link, once. This is the device flow
+is claimed, is handed the display's link. It can ask again until the
+pairing expires (ten minutes from the claim), so a reply lost on a flaky
+network doesn't strand the TV. This is the device flow
 YouTube and Netflix use. It lives in its own app, `apps/pairing`, so it
 stays apart from the display pages.
 

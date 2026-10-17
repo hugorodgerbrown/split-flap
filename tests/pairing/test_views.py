@@ -31,7 +31,7 @@ def _start(client: Client) -> dict[str, Any]:
 
 
 def test_a_tv_pairs_end_to_end(user: Any) -> None:
-    """Start, enter the code on the phone, and the TV's next poll gets the link, once."""
+    """Start, enter the code on the phone, and the TV's next poll gets the link."""
     tv, phone = Client(enforce_csrf_checks=True), Client()
     started = _start(tv)
     assert started["poll_seconds"] == 3
@@ -54,6 +54,10 @@ def test_a_tv_pairs_end_to_end(user: Any) -> None:
         "display_name": display.name,
         "display_url": f"http://testserver/d/{display.uuid}/",
     }
+    # A reply lost on the way can be asked for again, until the pairing expires.
+    assert tv.get(started["poll_url"]).json() == paired
+    assert TVPairing.objects.get().delivered_at is not None
+    TVPairing.objects.update(expires_at=timezone.now() - timedelta(seconds=1))
     assert tv.get(started["poll_url"]).status_code == 410
 
 
@@ -155,3 +159,12 @@ def test_display_page_links_to_pairing(signed_in: Client) -> None:
     """The display page offers to link a TV app."""
     response = signed_in.get(reverse("boards:manage"))
     assert reverse("pairing:pair").encode() in response.content
+
+
+def test_claiming_gives_the_tv_a_fresh_ten_minutes(user: Any) -> None:
+    """A code claimed in its last second still leaves the TV time to collect it."""
+    started = services.start()
+    TVPairing.objects.update(expires_at=timezone.now() + timedelta(seconds=1))
+    pairing = services.claim(started.code, display_for(user))
+    assert pairing is not None
+    assert pairing.expires_at > timezone.now() + timedelta(minutes=9)
