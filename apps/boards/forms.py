@@ -4,7 +4,13 @@ from typing import Any
 
 from django import forms
 
-from apps.boards.models import MAX_MESSAGE_LENGTH, MAX_NAME_LENGTH, Board, Display
+from apps.boards.models import (
+    MAX_MESSAGE_LENGTH,
+    MAX_NAME_LENGTH,
+    SOUND_DELAYS_MS,
+    Board,
+    Display,
+)
 from apps.boards.services import BoardError, check_fits, check_name
 
 
@@ -64,6 +70,14 @@ class SoundForm(forms.Form):
     def on(self) -> bool:
         """Return whether the sound was turned on."""
         return bool(self.cleaned_data["sound"] == "on")
+
+
+class SoundDelayForm(forms.Form):
+    """How long the display holds its flaps back for the sound (Sound timing)."""
+
+    sound_delay_ms = forms.TypedChoiceField(
+        coerce=int, choices=[(str(ms), f"{ms} ms") for ms in SOUND_DELAYS_MS]
+    )
 
 
 class MoveForm(forms.Form):

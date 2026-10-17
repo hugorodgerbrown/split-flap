@@ -23,7 +23,9 @@ from apps.boards.services import (
     move_board,
     post_message,
     rename_board,
+    replay,
     set_sound,
+    set_sound_delay,
 )
 from tests.factories import BoardFactory, DisplayFactory, UserFactory
 
@@ -236,4 +238,36 @@ def test_state_says_whether_the_sound_is_on(user: Any) -> None:
     set_sound(display, True)
     after = Display.objects.get(pk=display.pk).state()
     assert after["sound"] is True
+    assert after["version"] != before["version"]
+
+
+def test_state_carries_the_sound_timing(user: Any) -> None:
+    """The TV is told how long to hold its flaps back, and a change reaches it."""
+    display = display_for(user)
+    before = display.state()
+    assert before["sound_delay_ms"] == 0
+    set_sound_delay(display, 150)
+    after = Display.objects.get(pk=display.pk).state()
+    assert after["sound_delay_ms"] == 150
+    assert after["version"] != before["version"]
+
+
+@pytest.mark.parametrize("delay_ms", [-50, 25, 550])
+def test_sound_timing_takes_only_its_steps(user: Any, delay_ms: int) -> None:
+    """Anything but a 50 ms step from 0 to 500 is refused and nothing is saved."""
+    display = display_for(user)
+    with pytest.raises(ValueError, match="50 ms"):
+        set_sound_delay(display, delay_ms)
+    assert Display.objects.get(pk=display.pk).sound_delay_ms == 0
+
+
+def test_replay_counts_up_and_changes_the_version(user: Any) -> None:
+    """Each replay is a new number, so the TV sees it even if nothing else changed."""
+    display = display_for(user)
+    before = display.state()
+    replay(display)
+    replay(display)
+    assert display.replays == 2
+    after = Display.objects.get(pk=display.pk).state()
+    assert after["replays"] == 2
     assert after["version"] != before["version"]
