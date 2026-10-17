@@ -17,6 +17,7 @@ from apps.accounts.models import (
 )
 from apps.boards.models import Board, Display
 from apps.notes.models import Note
+from apps.pairing.models import TVPairing
 
 
 class UserFactory(factory.django.DjangoModelFactory):
@@ -119,3 +120,16 @@ class BoardFactory(factory.django.DjangoModelFactory):
 
     display = factory.SubFactory(DisplayFactory)
     name = factory.Sequence(lambda n: f"Board {n}")
+
+
+class TVPairingFactory(factory.django.DjangoModelFactory):
+    """A pairing waiting for its code; use ``apps.pairing.services.start`` for the secrets."""
+
+    class Meta:
+        """Factory metadata."""
+
+        model = TVPairing
+
+    token_hash = factory.Sequence(lambda n: f"{n:064x}")
+    code_hash = factory.Sequence(lambda n: f"{n:064x}")
+    expires_at = factory.LazyFunction(lambda: timezone.now() + timedelta(minutes=10))

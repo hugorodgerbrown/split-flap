@@ -166,7 +166,44 @@ a { color: var(--action); }
 .hero__body { max-width: 40rem; margin: 0 auto; }
 .hero--dark .hero__lead, .hero--dark .hero__note { color: var(--brand-text-2); }
 .hero__board { max-width: 60rem; margin: var(--space-3xl) auto 0; }
-.hero__caption { margin-top: var(--space-lg); color: var(--brand-text-2); font-size: var(--type-sm); }
+.hero__caption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs) var(--space-lg);
+  margin-top: var(--space-lg);
+  color: var(--brand-text-2);
+  font-size: var(--type-sm);
+}
+
+/* The flap sound's toggle, under the board: off by default, the accent when on. */
+.sound-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: 44px;
+  padding: 0 var(--space-sm);
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.sound-toggle[hidden] { display: none; }
+.sound-toggle[aria-pressed="true"] { color: var(--accent); }
+.sound-toggle__icon {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.sound-toggle[aria-pressed="true"] .sound-toggle__off,
+.sound-toggle[aria-pressed="false"] .sound-toggle__waves { display: none; }
 @media (min-width: 40rem) {
   .hero--dark h1 { font-size: var(--type-4xl); line-height: 1.1; text-wrap: balance; }
 }

@@ -37,6 +37,7 @@
           <button class="button button--secondary" type="button" data-copy="{{ tv_url }}" data-copy-target="tv-url" data-copied-label="Copied" hidden>Copy</button>
         </p>
         <p class="meta">Anyone with this link can see the board, so keep it to your own screens. The display cycles through your boards in the order below.</p>
+        <p class="meta">Using the Android TV app? <a href="{% url 'pairing:pair' %}">Link it with the code it shows</a>.</p>
         <form class="setting" id="sound" method="post" action="{% url 'boards:sound' %}">
           {% csrf_token %}
           <span class="setting__text">

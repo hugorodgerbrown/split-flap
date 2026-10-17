@@ -6,7 +6,9 @@
  * first board in, as the display does when it loads, then every few seconds
  * turns each tile through the drum to the next board's symbol, flap by flap
  * (as static/js/splitflap.js does). Reduced motion shows each board without
- * flipping.
+ * flipping. The sound toggle under the board turns on the flap sound
+ * (static/js/flap_sound.js); it stays hidden without motion, as there's
+ * nothing to hear.
  */
 (() => {
   const board = document.querySelector('[data-front-board]');
@@ -69,6 +71,7 @@
     setFace(lBot, next);
     cell.lTop.animate(TOP_FALL, { duration: d * 0.45, easing: 'ease-in', fill: 'forwards' });
     cell.lBot.animate(BOTTOM_FALL, { duration: d * 0.55, delay: d * 0.45, easing: 'ease-out', fill: 'both' });
+    setTimeout(() => window.FlapSound?.clack(), d * 0.65);
     cell.cur = next;
     // Once the leaves have landed, every face shows the new symbol, so the
     // old one (a cream tile, say) can't peep out from under a leaf's edge.
@@ -104,6 +107,14 @@
       // A left-to-right wave with a little scatter.
       const delay = (k % 22) * 32 + Math.floor(k / 22) * 14 + Math.random() * 70;
       setTimeout(() => run(cell), delay);
+    });
+  }
+
+  const soundToggle = document.querySelector('[data-sound-toggle]');
+  if (soundToggle && window.FlapSound && !reduceMotion) {
+    soundToggle.hidden = false;
+    soundToggle.addEventListener('click', () => {
+      soundToggle.setAttribute('aria-pressed', window.FlapSound.toggle());
     });
   }
 

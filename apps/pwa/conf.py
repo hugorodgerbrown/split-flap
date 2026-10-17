@@ -7,7 +7,7 @@ drew the icons in ``static/icons/`` from the same name and colour.
 
 APP_NAME = "Split-Flap"
 SHORT_NAME = APP_NAME[:12]
-DESCRIPTION = "A split-flap board for your TV that Claude can post to"
+DESCRIPTION = "A split-flap display for any screen that Claude can post to"
 THEME_COLOUR = "#1C1B1A"
 BACKGROUND_COLOUR = "#ffffff"
 

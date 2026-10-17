@@ -116,6 +116,7 @@ INSTALLED_APPS = [
     "apps.pwa",
     "apps.notes",
     "apps.boards",
+    "apps.pairing",
     "apps.design",
     # Before mcp_auth so the project's own templates win.
     "apps.mcp",
