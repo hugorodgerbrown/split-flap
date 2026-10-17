@@ -1,0 +1,1 @@
+<span class="face{% if tile.colour %} colour t-{{ tile.colour }}{% endif %}">{% if tile.icon %}<svg class="face__icon" aria-hidden="true"><use href="{{ pictograms }}#{{ tile.icon }}"></use></svg>{% else %}{{ tile.char }}{% endif %}</span>

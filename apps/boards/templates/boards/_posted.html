@@ -1,0 +1,1 @@
+{% if board.posted_at %}Posted <time datetime="{{ board.posted_at|date:'c' }}">{{ board.posted_at|date:"j M, H:i" }}</time>{% else %}Nothing posted yet, so the display shows its name.{% endif %}

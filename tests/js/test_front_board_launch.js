@@ -33,7 +33,14 @@ describe('front board launch', () => {
 
   it('flips the first board in, flap by flap', async () => {
     await vi.advanceTimersByTimeAsync(5000);
-    expect(tops()).toEqual(['face|H', 'face|I', 'face tile t-r|']);
+    expect(tops()).toEqual(['face|H', 'face|I', 'face colour t-r|']);
     expect(Element.prototype.animate).toHaveBeenCalled();
+  });
+
+  it('leaves every face of a landed tile showing it, so no old face peeps out', () => {
+    for (const el of document.querySelectorAll('.cell')) {
+      const faces = [...el.querySelectorAll('.face')].map(f => f.className + '|' + f.textContent);
+      expect(new Set(faces).size).toBe(1);
+    }
   });
 });

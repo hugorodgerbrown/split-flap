@@ -22,6 +22,7 @@
     <script src="{% static 'js/outbox.js' %}" defer></script>
     <script src="{% static 'js/pwa.js' %}" defer></script>
     <script src="{% static 'js/launch_shell.js' %}" defer></script>
+    {% block extra_css %}{% endblock %}
     {% block extra_js %}{% endblock %}
   </head>
   <body>
@@ -37,7 +38,7 @@
     <div class="offline-banner" data-offline-banner hidden>
       You're offline. Changes are saved on this device and sent when you're back.
     </div>
-    <main class="app-main">
+    <main class="app-main{% block main_class %}{% endblock %}">
       {% block content %}{% endblock %}
     </main>
   </body>

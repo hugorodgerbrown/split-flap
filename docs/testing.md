@@ -33,6 +33,9 @@ in the PR; the usual answer is that the assertion belongs in `tests/js`.
   (`test_offline_page.py`).
 - **passkey**: add a passkey on the account page, sign out, sign back in
   with it, against Chromium's virtual authenticator (`test_passkey.py`).
+- **boards**: add a board, type a message and watch the preview draw it as
+  a draft, save it, then delete the board (`test_boards.py`). A browser,
+  because the preview's tiles, font and pictograms are drawn for real.
 
 Every journey signs in through the real email flow (`tests/e2e/conftest.py`
 reads the link from `mailoutbox`).

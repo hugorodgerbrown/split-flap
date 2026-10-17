@@ -31,7 +31,9 @@ def _json(data: dict[str, object], status: int = 200) -> JsonResponse:
     return response
 
 
-@csrf_exempt
+# The TV sends no cookies, so there is no session for a forged request to use
+# (docs/decisions/a-tv-app-pairs-with-a-short-code.md).
+@csrf_exempt  # nosemgrep: python.django.security.audit.csrf-exempt.no-csrf-exempt
 @require_POST
 def tv_start(request: HttpRequest) -> HttpResponse:
     """Start a pairing: the code to show, the link for its QR code and where to poll."""
