@@ -1,8 +1,8 @@
 # How the board moves
 
 How one tile flips, and how a whole board changes from one message to the
-next. This describes the TV's board (`static/js/splitflap.js`, styled by
-`static/css/board.css`). The front page's board (`static/js/front_board.js`)
+next. This describes the TV's board, drawn and flipped by `Board` in
+`static/js/flapmotion.js` and styled by `static/css/board.css`. The front page's board (`static/js/front_board.js`)
 changes message the same way, using the shared parts in
 `static/js/flapmotion.js`. Its flip is a lighter version, without the
 darkening or the bounce.
@@ -82,3 +82,13 @@ once, and the change takes 2.4 s. Why:
 
 With reduced motion, or while the page is hidden, tiles snap straight to
 their new symbol.
+
+## Tuning it
+
+Every number above is in `DEFAULTS` in `static/js/flapmotion.js`. Staff
+can tune them by eye at **/app/design/board/** (linked from the design
+page). The page has a live board, a slider for each number, a choice of
+boards to change between, and Replay. The sliders change the numbers on
+that page only, and nothing is saved. When it looks right, copy the
+values from the page over `DEFAULTS` and commit them.
+

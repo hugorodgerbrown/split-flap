@@ -1,0 +1,15 @@
+/*
+ * static/css/tuning.css — the controls on the board tuning page
+ * (/app/design/board/), a staff tool. Kept out of app.css, whose precached
+ * bytes are budgeted for the app itself.
+ */
+[data-tuning] select {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--card);
+  color: var(--text-1);
+  font: inherit;
+}
+[data-tuning] input[type="range"] { flex: 0 1 50%; min-width: 0; accent-color: var(--action); }
