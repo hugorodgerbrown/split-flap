@@ -7,7 +7,9 @@ beforeAll(async () => {
   vi.useFakeTimers();
   // Reduced motion: each board is shown without flipping, so jsdom needs no Web Animations.
   vi.stubGlobal('matchMedia', () => ({ matches: true }));
+  vi.stubGlobal('FlapSound', { clack: vi.fn(), toggle: vi.fn() });
   document.body.innerHTML = `
+    <button type="button" aria-pressed="false" data-sound-toggle hidden>Sound</button>
     <div class="board" role="img" aria-label="Hi" data-front-board
          data-frames='[["H","I","{r}"],["Y","O","{g}"]]' data-names='["Morning","Weather"]' data-labels='["Hi","Yo"]'>
       <div class="grid">${cell('H')}${cell('I')}${cell('')}</div>
@@ -25,6 +27,10 @@ afterAll(() => {
 const faces = () => [...document.querySelectorAll('.cell')].map(c => [...c.querySelectorAll('.face')]);
 
 describe('front board', () => {
+  it('keeps the sound toggle hidden, as nothing flips to be heard', () => {
+    expect(document.querySelector('[data-sound-toggle]').hidden).toBe(true);
+  });
+
   it('adds the moving leaves to each server-drawn cell', () => {
     expect(document.querySelectorAll('.cell .leaf')).toHaveLength(6);
     expect(faces()[0].map(f => f.textContent)).toEqual(['H', 'H', 'H', 'H']);
