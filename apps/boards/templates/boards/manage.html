@@ -10,7 +10,7 @@
       <code class="copy-field__value" id="tv-url">{{ tv_url }}</code>
       <button class="button button--secondary" type="button" data-copy="{{ tv_url }}" data-copy-target="tv-url" data-copied-label="Copied" hidden>Copy</button>
     </p>
-    <p><a href="{% url 'tv:board' display.uuid %}">Open the board</a></p>
+    <p><a href="{% url 'tv:board' display.uuid %}">Open the board</a> · <a href="{% url 'pairing:pair' %}">Link a TV app</a></p>
   </section>
   <section class="card stack">
     <h2>Post a message</h2>

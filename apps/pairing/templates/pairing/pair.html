@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Link a TV · {{ pwa.name }}{% endblock %}
+{% block content %}
+  <section class="card stack">
+    {% if paired %}
+      <h1>Your TV is linked</h1>
+      <p>It will show {{ display.name }} in a moment. You can close this page.</p>
+      <p><a href="{% url 'boards:manage' %}">Back to your display</a></p>
+    {% else %}
+      <h1>Link a TV</h1>
+      <p>Open {{ pwa.name }} on your Android TV and type the code it shows. The TV will then show {{ display.name }}.</p>
+      <form class="stack" method="post" action="{% url 'pairing:pair' %}">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        <label class="field">
+          <span class="field__label">Code</span>
+          <input id="pair-code" class="input--code" type="text" name="code" value="{{ form.code.value|default:'' }}"
+                 autocapitalize="characters" autocomplete="off" spellcheck="false" maxlength="20" required autofocus
+                 aria-describedby="pair-code-help">
+        </label>
+        {{ form.code.errors }}
+        <p class="meta" id="pair-code-help">Six letters and numbers, like K7Q-4MD. Each code lasts ten minutes and works once.</p>
+        <button class="button" type="submit">Link this TV</button>
+      </form>
+    {% endif %}
+  </section>
+{% endblock %}
