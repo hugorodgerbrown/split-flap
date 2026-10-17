@@ -53,8 +53,16 @@ cd android-tv
 with. Only debug builds may use plain `http://`; release builds are HTTPS only.
 
 CI (`.github/workflows/android-tv.yml`) runs the same tasks on every
-change under `android-tv/`, uploads the APK, and publishes a release for
-a `tv-v*` tag.
+change under `android-tv/` and uploads the APK.
+
+### Releasing
+
+On GitHub, open **Actions → Android TV → Run workflow**, leave the branch
+on `main`, type the version (three numbers, like `0.1.0`) and run it. It
+tests and builds the APK, then publishes the release **Riffle for
+Android TV 0.1.0** with `split-flap-tv-0.1.0.apk` attached, tagging the
+commit it built `tv-v0.1.0`. Pushing a `tv-v0.1.0` tag yourself does the
+same. Each version can be released once.
 
 ### The signing key
 
