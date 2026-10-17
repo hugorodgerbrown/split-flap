@@ -38,6 +38,14 @@
         </p>
         <p class="meta">Anyone with this link can see the board, so keep it to your own screens. The display cycles through your boards in the order below.</p>
         <p class="meta">Using the Android TV app? <a href="{% url 'pairing:pair' %}">Link it with the code it shows</a>.</p>
+        <form class="setting" id="sound" method="post" action="{% url 'boards:sound' %}">
+          {% csrf_token %}
+          <span class="setting__text">
+            <span class="item__title" id="sound-label">Sound</span>
+            <span class="meta" id="sound-help">A soft clack as each flap turns. The display starts it at the first tap or key press.</span>
+          </span>
+          {% include "boards/_switch.html" with on=display.sound labelledby="sound-label" describedby="sound-help" %}
+        </form>
       </section>
       {% if mcp_url %}
         <section class="card stack" aria-labelledby="claude-h">

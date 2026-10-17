@@ -8,7 +8,7 @@ from django.test import Client
 from django.urls import reverse
 
 from apps.boards.models import MAX_BOARDS
-from apps.boards.services import display_for, post_message
+from apps.boards.services import display_for, post_message, set_sound
 from tests.factories import BoardFactory
 
 pytestmark = pytest.mark.django_db
@@ -291,3 +291,54 @@ def test_the_last_board_cant_be_deleted(signed_in: Client, user: Any) -> None:
     response = signed_in.post(url)
     assert response.status_code == 400
     assert display_for(user).boards.count() == 1
+
+
+def test_sound_starts_off_and_the_switch_says_so(signed_in: Client, user: Any) -> None:
+    """A new display is quiet, and its switch is a button that turns the sound on."""
+    response = signed_in.get(reverse("boards:manage"))
+    content = response.content.decode()
+    assert display_for(user).sound is False
+    assert f'action="{reverse("boards:sound")}"' in content
+    assert 'name="sound" value="on" role="switch" aria-checked="false"' in content
+
+
+def test_sound_switch_turns_it_on_and_off(signed_in: Client, user: Any) -> None:
+    """Each press saves the setting, comes back to the switch, and the TV is told."""
+    url = reverse("boards:sound")
+    response = signed_in.post(url, {"sound": "on"})
+    assert response.status_code == 302
+    assert response["Location"] == reverse("boards:manage") + "#sound"
+    display = display_for(user)
+    assert display.sound is True
+    state = signed_in.get(reverse("tv:state", args=[display.uuid])).json()
+    assert state["sound"] is True
+    content = signed_in.get(reverse("boards:manage")).content.decode()
+    assert 'name="sound" value="off" role="switch" aria-checked="true"' in content
+    signed_in.post(url, {"sound": "off"})
+    assert display_for(user).sound is False
+
+
+def test_sound_switch_ignores_a_bad_value(signed_in: Client, user: Any) -> None:
+    """Anything but on or off changes nothing."""
+    display_for(user)
+    assert signed_in.post(reverse("boards:sound"), {"sound": "loud"}).status_code == 302
+    assert display_for(user).sound is False
+
+
+def test_sound_switch_needs_sign_in(client: Client, user: Any) -> None:
+    """Signed-out visitors are sent to sign in, and the setting is left alone."""
+    display_for(user)
+    response = client.post(reverse("boards:sound"), {"sound": "on"})
+    assert response.status_code == 302
+    assert "/signin/" in response["Location"]
+    assert display_for(user).sound is False
+    assert client.get(reverse("boards:sound")).status_code == 405
+
+
+def test_tv_page_carries_the_sound_setting(client: Client, user: Any) -> None:
+    """The TV knows the setting from its first draw, before it polls."""
+    display = display_for(user)
+    url = reverse("tv:board", args=[display.uuid])
+    assert b'data-sound="off"' in client.get(url).content
+    set_sound(display, True)
+    assert b'data-sound="on"' in client.get(url).content

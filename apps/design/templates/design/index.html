@@ -173,7 +173,15 @@
 
   <section class="card stack" aria-labelledby="ds-boards">
     <h2 id="ds-boards">The display and its boards</h2>
-    <p class="meta">The board itself is drawn by static/css/preview.css, apart from the design system (docs/decisions/the-tv-board-has-its-own-stylesheet.md).</p>
+    <p class="meta">The board itself is drawn by static/css/board.css, apart from the design system (docs/decisions/the-tv-board-has-its-own-stylesheet.md).</p>
+    <div class="setting">
+      <span class="setting__text"><span class="item__title" id="ds-sound-off">A setting, off</span><span class="meta">A line on what it does</span></span>
+      <button class="switch" type="button" role="switch" aria-checked="false" aria-labelledby="ds-sound-off"><span class="switch__track" aria-hidden="true"></span><span class="switch__state" aria-hidden="true">Off</span></button>
+    </div>
+    <div class="setting">
+      <span class="setting__text"><span class="item__title" id="ds-sound-on">A setting, on</span><span class="meta">A line on what it does</span></span>
+      <button class="switch" type="button" role="switch" aria-checked="true" aria-labelledby="ds-sound-on"><span class="switch__track" aria-hidden="true"></span><span class="switch__state" aria-hidden="true">On</span></button>
+    </div>
     <a class="back-link" href="#ds-boards"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>A back link</a>
     <nav class="segmented" aria-label="A segmented choice">
       <a class="segmented__option" href="#ds-boards" aria-current="true">Home</a>

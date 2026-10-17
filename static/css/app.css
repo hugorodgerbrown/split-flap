@@ -394,6 +394,48 @@ input.code-box:focus { border-color: var(--action); outline: 2px solid var(--act
 .icon-button svg { width: 18px; height: 18px; }
 .icon-button:disabled { opacity: 0.4; cursor: default; }
 
+/* A setting: its name and a line on what it does, with its control beside them. */
+.setting { display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); margin: 0; }
+.setting__text { display: flex; flex-direction: column; min-width: 0; }
+
+/* An on/off switch (role="switch"); aria-checked says which, and the word beside it repeats it. */
+.switch {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-2);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.switch__track {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  border-radius: var(--radius-card);
+  background: var(--border);
+}
+.switch__track::after {
+  content: "";
+  position: absolute;
+  top: var(--space-2xs);
+  left: var(--space-2xs);
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-round);
+  background: var(--text-2);
+}
+.switch__state { min-width: 2em; }
+.switch[aria-checked="true"] { color: var(--text-1); }
+.switch[aria-checked="true"] .switch__track { background: var(--action); }
+.switch[aria-checked="true"] .switch__track::after { background: var(--action-text); transform: translateX(20px); }
+.switch:focus-visible { outline: 2px solid var(--action); outline-offset: 2px; border-radius: var(--radius-control); }
+
 /* Buttons side by side, wrapping on a phone. */
 .button-row { display: flex; flex-wrap: wrap; gap: var(--space-sm); margin: 0; }
 

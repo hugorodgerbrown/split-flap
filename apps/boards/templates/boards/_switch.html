@@ -1,0 +1,5 @@
+{# An on/off switch that is a plain submit button: pressing it posts the other value. #}
+<button class="switch" type="submit" name="sound" value="{{ on|yesno:'off,on' }}" role="switch" aria-checked="{{ on|yesno:'true,false' }}"{% if labelledby %} aria-labelledby="{{ labelledby }}"{% endif %}{% if describedby %} aria-describedby="{{ describedby }}"{% endif %}>
+  <span class="switch__track" aria-hidden="true"></span>
+  <span class="switch__state" aria-hidden="true">{{ on|yesno:'On,Off' }}</span>
+</button>

@@ -25,6 +25,15 @@ body.idle { cursor: none; }
   background: radial-gradient(ellipse at 50% 42%, #141312 0%, var(--wall) 70%);
 }
 
+/* Shown while the display page has the sound on but the browser hasn't let it start. */
+.sound-hint {
+  position: fixed; top: calc(18px + env(safe-area-inset-top, 0px)); right: max(18px, env(safe-area-inset-right, 0px));
+  margin: 0; padding: 8px 14px; border-radius: 999px;
+  font: 500 14px/1 var(--font-ui); color: var(--ui-fg);
+  background: var(--ui-bg); border: 1px solid var(--ui-line);
+  pointer-events: none; z-index: 20;
+}
+
 /* Control bar */
 .hud {
   position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px));
