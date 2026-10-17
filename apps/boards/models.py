@@ -33,6 +33,12 @@ MAX_BOARDS = 12
 # The board a new display starts with.
 FIRST_BOARD_NAME = "Home"
 
+# How far the display page's Sound timing setting can hold the flaps back, and
+# its step: enough for a soundbar or receiver, in steps an ear can tell apart.
+MAX_SOUND_DELAY_MS = 500
+SOUND_DELAY_STEP_MS = 50
+SOUND_DELAYS_MS = tuple(range(0, MAX_SOUND_DELAY_MS + 1, SOUND_DELAY_STEP_MS))
+
 
 class DisplayQuerySet(models.QuerySet["Display"]):
     """Queries over displays."""
@@ -50,6 +56,12 @@ class Display(BaseModel):
     # Whether the TV plays the flap sound. Browsers start it at the TV's first
     # tap or key press, so "on" means "as soon as the browser allows".
     sound = models.BooleanField(default=False)
+    # How long the TV holds the flaps back so each clack is heard with its flap,
+    # on top of the delay the browser reports: a soundbar's delay is unseen.
+    sound_delay_ms = models.PositiveSmallIntegerField(default=0)
+    # Bumped by the display page's Replay button; the TV flips its board again
+    # whenever it changes.
+    replays = models.PositiveIntegerField(default=0)
 
     objects = DisplayQuerySet.as_manager()
 
@@ -65,8 +77,16 @@ class Display(BaseModel):
     def state(self) -> dict[str, object]:
         """Return what the TV needs to draw every board, and a version for caching."""
         boards = [board.as_json() for board in self.boards.all()]
-        version = hashlib.sha256(repr((self.sound, boards)).encode()).hexdigest()[:16]
-        return {"name": self.name, "sound": self.sound, "boards": boards, "version": version}
+        settings_ = (self.sound, self.sound_delay_ms, self.replays)
+        version = hashlib.sha256(repr((settings_, boards)).encode()).hexdigest()[:16]
+        return {
+            "name": self.name,
+            "sound": self.sound,
+            "sound_delay_ms": self.sound_delay_ms,
+            "replays": self.replays,
+            "boards": boards,
+            "version": version,
+        }
 
 
 class BoardQuerySet(models.QuerySet["Board"]):

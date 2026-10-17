@@ -10,6 +10,12 @@
  * changes; the HUD's Sound button and the S key switch it for this screen
  * meanwhile. Browsers start sound only after a tap or key press, so until then
  * a sound that's on shows "Tap for sound".
+ *
+ * A clack is heard a little after it's played (the browser's audio buffer, then
+ * any soundbar), and a flap lasts about 50 ms, so while the sound plays each flap
+ * is drawn that much later than its clack is played: the delay the browser
+ * reports plus the display's Sound timing (state.sound_delay_ms). The display
+ * page's Replay button (state.replays) flips the board again from blank.
  */
 (() => {
   const { COLS, ROWS, ICON_MASKS: ICON_URL, DRUM, DRUM_POS, parse, message } = self.FlapText;
@@ -72,6 +78,7 @@
       this.running = false;
       // Each module's motor runs at a slightly different speed, like the real thing.
       this.ms = 48 + Math.random() * 20;
+      this.drawn = 0;
       [this.sTop, this.sBot, this.lTop, this.lBot].forEach(h => setFace(h, ' '));
     }
     set(sym, delay) {
@@ -90,20 +97,28 @@
       this.running = false;
     }
     snap(sym) {
+      this.drawn++;  // drop any flap still waiting to be drawn
       this.a1?.cancel(); this.a2?.cancel();
       [this.sTop, this.sBot, this.lTop, this.lBot].forEach(h => setFace(h, sym));
       this.cur = sym;
     }
     // Fire-and-forget animations paced by a timer, so fast spins are not held back by frame timing.
+    // The clack is played on time and the flap drawn sound.lagMs() later, so they're heard and seen together.
     flip(next, pace = 1) {
       const d = this.ms * pace * SPEEDS[speed].k;
-      this.a1?.cancel(); this.a2?.cancel();
-      setFace(this.sTop, next);
-      setFace(this.sBot, this.cur);
-      setFace(this.lTop, this.cur);
-      setFace(this.lBot, next);
-      this.a1 = this.lTop.animate(TOP_FALL, { duration: d * 0.42, easing: 'cubic-bezier(.55,0,1,.45)', fill: 'forwards' });
-      this.a2 = this.lBot.animate(BOTTOM_FALL, { duration: d * 0.58, delay: d * 0.42, fill: 'both' });
+      const prev = this.cur, drawn = this.drawn;
+      const draw = () => {
+        if (drawn !== this.drawn) return;
+        this.a1?.cancel(); this.a2?.cancel();
+        setFace(this.sTop, next);
+        setFace(this.sBot, prev);
+        setFace(this.lTop, prev);
+        setFace(this.lBot, next);
+        this.a1 = this.lTop.animate(TOP_FALL, { duration: d * 0.42, easing: 'cubic-bezier(.55,0,1,.45)', fill: 'forwards' });
+        this.a2 = this.lBot.animate(BOTTOM_FALL, { duration: d * 0.58, delay: d * 0.42, fill: 'both' });
+      };
+      const lag = sound.lagMs();
+      if (lag > 0) setTimeout(draw, lag); else draw();
       setTimeout(() => sound.clack(), d * 0.65);
       this.cur = next;
       return new Promise(r => setTimeout(r, d));
@@ -118,6 +133,12 @@
   }
 
   let shown = '';
+  // Flip every tile again from blank, as if the message had just arrived.
+  function replay() {
+    cells.forEach(c => { c.target = ' '; c.snap(' '); });
+    shown = '';
+    show(renderBoard(BOARDS[active]));
+  }
   function show(lines) {
     const rows = Array.from({ length: ROWS }, (_, r) => {
       const syms = parse(lines[r] ?? '').slice(0, COLS);
@@ -136,8 +157,16 @@
   // ---- Sound: a short synthesised clack per flap, throttled into a rattle ----
   const sound = {
     on: false, ctx: null, bufs: [], last: 0,
+    // The display's Sound timing: extra delay, in ms, for what the browser can't see (a soundbar).
+    delayMs: 0,
     // Whether the browser is playing: it holds sound back until a tap or key press.
     running() { return this.ctx?.state === 'running'; },
+    // How long after its clack is played to draw a flap: none while nothing plays.
+    lagMs() {
+      if (!this.on || !this.running()) return 0;
+      const reported = ((this.ctx.outputLatency || 0) + (this.ctx.baseLatency || 0)) * 1000;
+      return Math.round(reported + this.delayMs);
+    },
     init() {
       if (this.ctx) return;
       const Ctx = window.AudioContext || window.webkitAudioContext;
@@ -342,6 +371,8 @@
   // before the first poll still starts the sound.
   let soundSetting = root.dataset.sound === 'on';
   setSound(soundSetting);
+  sound.delayMs = +root.dataset.soundDelay || 0;
+  let replays = root.dataset.replays ?? null;
   async function poll() {
     try {
       const response = await fetch(root.dataset.stateUrl, {
@@ -356,13 +387,18 @@
           soundSetting = Boolean(state.sound);
           setSound(soundSetting);
         }
+        sound.delayMs = +state.sound_delay_ms || 0;
         const newest = state.boards.reduce((a, b) => ((b.posted_at || '') > (a.posted_at || '') ? b : a), {});
         // Something new was posted since we last looked: turn to that board so it's seen.
         if (lastPosted !== null && newest.posted_at && newest.posted_at > lastPosted) {
           select(state.boards.indexOf(newest));
         }
         lastPosted = newest.posted_at || '';
-        show(renderBoard(BOARDS[active]));
+        // Replay pressed on the display page since the page was drawn.
+        const replayed = replays !== null && String(state.replays) !== replays;
+        replays = String(state.replays);
+        if (replayed) replay();
+        else show(renderBoard(BOARDS[active]));
       }
     } catch (e) {
       // Offline, or the server is restarting: keep showing what we have.

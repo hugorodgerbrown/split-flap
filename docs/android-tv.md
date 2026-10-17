@@ -39,6 +39,13 @@ so allow it once from a computer:
 adb shell appops set com.ultraniche.splitflap.tv SYSTEM_ALERT_WINDOW allow
 ```
 
+### When the sound is late
+
+The clack is made on the TV, but a TV (and more so a soundbar or receiver)
+plays it a little late. The board holds each flap back by the delay the
+browser reports. For the rest, turn up **Sound timing** on the display page
+and press **Replay** after each step until the clacks land with the flaps.
+
 ## Building it
 
 You need JDK 17 and the Android SDK (Android Studio brings both).

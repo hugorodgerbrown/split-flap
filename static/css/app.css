@@ -439,6 +439,7 @@ input.code-box:focus { border-color: var(--action); outline: 2px solid var(--act
 
 /* Buttons side by side, wrapping on a phone. */
 .button-row { display: flex; flex-wrap: wrap; gap: var(--space-sm); margin: 0; }
+.button-row--fixed { flex-wrap: nowrap; align-items: center; }
 
 /* A text field and its button on one line, wrapping on a phone. */
 .inline-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-sm); margin: 0; }

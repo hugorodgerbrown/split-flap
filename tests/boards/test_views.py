@@ -8,7 +8,7 @@ from django.test import Client
 from django.urls import reverse
 
 from apps.boards.models import MAX_BOARDS
-from apps.boards.services import display_for, post_message, set_sound
+from apps.boards.services import display_for, post_message, replay, set_sound, set_sound_delay
 from tests.factories import BoardFactory
 
 pytestmark = pytest.mark.django_db
@@ -342,3 +342,75 @@ def test_tv_page_carries_the_sound_setting(client: Client, user: Any) -> None:
     assert b'data-sound="off"' in client.get(url).content
     set_sound(display, True)
     assert b'data-sound="on"' in client.get(url).content
+
+
+def test_sound_timing_shows_only_while_the_sound_is_on(signed_in: Client, user: Any) -> None:
+    """There's nothing to time while the display is quiet; Replay is always there."""
+    display = display_for(user)
+    content = signed_in.get(reverse("boards:manage")).content.decode()
+    assert reverse("boards:sound_delay") not in content
+    assert f'action="{reverse("boards:replay")}"' in content
+    set_sound(display, True)
+    content = signed_in.get(reverse("boards:manage")).content.decode()
+    assert f'action="{reverse("boards:sound_delay")}"' in content
+    assert "0&nbsp;ms</output>" in content
+
+
+def test_sound_timing_steps_up_and_down(signed_in: Client, user: Any) -> None:
+    """Each button posts the next step; the ends of the range turn their button off."""
+    display = display_for(user)
+    set_sound(display, True)
+    content = signed_in.get(reverse("boards:manage")).content.decode()
+    assert 'name="sound_delay_ms" value="0" aria-label="Less delay" disabled' in content
+    assert 'name="sound_delay_ms" value="50" aria-label="More delay">' in content
+    response = signed_in.post(reverse("boards:sound_delay"), {"sound_delay_ms": "50"})
+    assert response.status_code == 302
+    assert response["Location"] == reverse("boards:manage") + "#sound-timing"
+    assert display_for(user).sound_delay_ms == 50
+    state = signed_in.get(reverse("tv:state", args=[display.uuid])).json()
+    assert state["sound_delay_ms"] == 50
+    set_sound_delay(display, 500)
+    content = signed_in.get(reverse("boards:manage")).content.decode()
+    assert 'name="sound_delay_ms" value="450" aria-label="Less delay">' in content
+    assert 'name="sound_delay_ms" value="500" aria-label="More delay" disabled' in content
+
+
+def test_sound_timing_ignores_a_bad_value(signed_in: Client, user: Any) -> None:
+    """A value off the steps changes nothing."""
+    display_for(user)
+    for value in ("25", "600", "soon"):
+        assert (
+            signed_in.post(reverse("boards:sound_delay"), {"sound_delay_ms": value}).status_code
+            == 302
+        )
+    assert display_for(user).sound_delay_ms == 0
+
+
+def test_replay_tells_the_tv(signed_in: Client, user: Any) -> None:
+    """Replay comes back to its button, and the TV's state carries the new count."""
+    display = display_for(user)
+    response = signed_in.post(reverse("boards:replay"))
+    assert response.status_code == 302
+    assert response["Location"] == reverse("boards:manage") + "#replay"
+    state = signed_in.get(reverse("tv:state", args=[display.uuid])).json()
+    assert state["replays"] == 1
+
+
+@pytest.mark.parametrize("name", ["boards:sound_delay", "boards:replay"])
+def test_sound_timing_and_replay_need_sign_in(client: Client, user: Any, name: str) -> None:
+    """Signed-out visitors are sent to sign in, and nothing changes."""
+    display_for(user)
+    response = client.post(reverse(name), {"sound_delay_ms": "100"})
+    assert "/signin/" in response["Location"]
+    display = display_for(user)
+    assert (display.sound_delay_ms, display.replays) == (0, 0)
+    assert client.get(reverse(name)).status_code == 405
+
+
+def test_tv_page_carries_the_sound_timing_and_replays(client: Client, user: Any) -> None:
+    """The TV starts from the saved timing and replay count, before it polls."""
+    display = display_for(user)
+    set_sound_delay(display, 200)
+    replay(display)
+    content = client.get(reverse("tv:board", args=[display.uuid])).content
+    assert b'data-sound-delay="200" data-replays="1"' in content

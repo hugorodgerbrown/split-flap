@@ -1,13 +1,14 @@
 // Tests for static/js/splitflap.js: the TV's flap sound following the display page's
-// setting, and starting at the first tap or key press as browsers require.
+// setting, starting at the first tap or key press as browsers require, the flaps
+// held back so they land with their clacks, and the display page's Replay.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import '../../static/js/flaptext.js';
 
 // The TV's page, as the server draws it with the sound setting ``sound``.
-const page = (sound) => `
+const page = (sound, attrs = '') => `
   <div class="stage">
-    <div class="board" id="board" data-state-url="/d/x/state/" data-poll-seconds="5" data-sound="${sound ? 'on' : 'off'}">
+    <div class="board" id="board" data-state-url="/d/x/state/" data-poll-seconds="5" data-sound="${sound ? 'on' : 'off'}" ${attrs}>
       <div class="grid" id="grid"></div>
       <div class="engrave"><span id="boardName"></span><span id="leds"></span></div>
     </div>
@@ -25,14 +26,16 @@ class FakeAudioContext {
   constructor() {
     this.state = 'suspended';
     this.sampleRate = 8000;
-    this.currentTime = 0;
+    this.baseLatency = 0.01;
+    this.outputLatency = 0.04;
     FakeAudioContext.made.push(this);
   }
   createBuffer(channels, length) { return { getChannelData: () => new Float32Array(length) }; }
   createGain() { return { gain: { value: 1 }, connect: (next) => next }; }
   createBiquadFilter() { return { frequency: {}, connect: (next) => next }; }
-  createBufferSource() { return { playbackRate: {}, connect: (next) => next, start() {} }; }
+  createBufferSource() { return { playbackRate: {}, connect: (next) => next, start() { FakeAudioContext.clacks.push(Date.now()); } }; }
   get destination() { return {}; }
+  get currentTime() { return Date.now() / 1000; }
   resume() {
     if (FakeAudioContext.allowed) {
       this.state = 'running';
@@ -44,11 +47,11 @@ class FakeAudioContext {
 
 let state;
 
-async function load(sound, { polled = true } = {}) {
-  state = { sound, boards: [{ name: 'Home', message: '', posted_at: null }] };
-  document.body.innerHTML = page(sound);
+async function load(sound, { polled = true, motion = false, attrs = '', delay = 0 } = {}) {
+  state = { sound, sound_delay_ms: delay, replays: 0, boards: [{ name: 'Home', message: '', posted_at: null }] };
+  document.body.innerHTML = page(sound, attrs);
   vi.useFakeTimers();
-  vi.stubGlobal('matchMedia', () => ({ matches: true }));  // reduced motion: tiles snap
+  vi.stubGlobal('matchMedia', () => ({ matches: !motion }));  // reduced motion: tiles snap
   vi.stubGlobal('fetch', vi.fn(async () => ({
     status: 200,
     headers: { get: () => null },
@@ -71,6 +74,7 @@ const press = (key) => window.dispatchEvent(new KeyboardEvent('keydown', { key, 
 const tap = () => document.getElementById('board').dispatchEvent(new Event('pointerdown', { bubbles: true }));
 
 beforeEach(() => {
+  FakeAudioContext.clacks = [];
   FakeAudioContext.made = [];
   FakeAudioContext.allowed = false;
 });
@@ -169,5 +173,64 @@ describe('the sound setting', () => {
     state = { ...state, sound: true };
     await poll();
     expect(hint().hidden).toBe(true);
+  });
+});
+
+describe('the flaps and their clacks', () => {
+  // When each flap is drawn: the moment its falling leaf starts to animate.
+  let drawn;
+  beforeEach(() => {
+    drawn = [];
+    Element.prototype.animate = function animate() { drawn.push(Date.now()); return { cancel() {} }; };
+  });
+  afterEach(() => { delete Element.prototype.animate; });
+
+  // Post ``message`` to the board and let every tile settle.
+  async function post(message) {
+    state = { ...state, boards: [{ name: 'Home', message, posted_at: null }] };
+    await poll();
+    await vi.advanceTimersByTimeAsync(5000);
+  }
+
+  // How long after the first clack the first flap is drawn.
+  const gap = () => Math.min(...drawn) - Math.min(...FakeAudioContext.clacks);
+
+  it('draws each flap at once while the sound is off', async () => {
+    await load(false, { motion: true });
+    await post('A');
+    expect(drawn.length).toBeGreaterThan(0);
+    expect(FakeAudioContext.clacks).toHaveLength(0);
+  });
+
+  it('holds the flaps back by the delay the browser reports, plus the Sound timing', async () => {
+    FakeAudioContext.allowed = true;
+    await load(true, { motion: true, attrs: 'data-sound-delay="150"', delay: 150 });
+    await post('A');
+    // The clack plays about two-thirds into its flap; the flap is drawn 50 + 150 ms after it starts.
+    expect(gap()).toBeGreaterThan(150);
+    expect(gap()).toBeLessThanOrEqual(200);
+  });
+
+  it('follows a new Sound timing from the display page', async () => {
+    FakeAudioContext.allowed = true;
+    await load(true, { motion: true });
+    await vi.advanceTimersByTimeAsync(5000);
+    drawn = [];
+    FakeAudioContext.clacks = [];
+    state = { ...state, sound_delay_ms: 400 };
+    await post('A');
+    expect(gap()).toBeGreaterThan(400);
+  });
+
+  it('flips the board again when Replay is pressed, and not otherwise', async () => {
+    await load(false, { motion: true, attrs: 'data-replays="0"' });
+    await post('HELLO');
+    const settled = drawn.length;
+    await poll();
+    expect(drawn.length).toBe(settled);
+    state = { ...state, replays: 1 };
+    await poll();
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(drawn.length).toBeGreaterThan(settled);
   });
 });
