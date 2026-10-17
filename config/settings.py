@@ -282,10 +282,12 @@ LOGGING = {
 # its own key), held to the callbacks below.
 OAUTH2_PROVIDER = oauth2_settings(
     resource_name=pwa_conf.APP_NAME,
-    scope_description="Read and add your notes",
+    scope_description="See and post to your boards, and read and add your notes",
 )
 MCP_AUTH = {
-    "CAN_CONNECT": "apps.mcp.policy.staff_only",
+    # Every active account: each person connects Claude to post to their own
+    # boards (docs/decisions/every-account-may-connect-claude.md).
+    "CAN_CONNECT": "mcp_auth.policy.active_user",
     # The consent page's "Signed in as": the masked address, not the key.
     "ACCOUNT_NAME": "apps.accounts.models.account_name",
     # ChatGPT's callbacks as well as Claude's and loopback.
