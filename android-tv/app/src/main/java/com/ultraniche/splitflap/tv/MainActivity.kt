@@ -141,6 +141,9 @@ class MainActivity : Activity() {
 
     private fun startPairing() {
         val gen = ++generation
+        // Stop recovering the board, or a late retry would restart pairing and replace this code.
+        main.removeCallbacks(retryBoard)
+        boardFailed = false
         board.visibility = View.GONE
         board.loadUrl("about:blank")
         reconnecting.visibility = View.GONE
