@@ -67,6 +67,11 @@ def _parse(text: str) -> list[str]:
     return out
 
 
+def parse(text: str) -> list[str]:
+    """Return the source of each tile ``text`` takes: a character, {x} or :name:."""
+    return _parse(text)
+
+
 def tiles(text: str) -> int:
     """Return how many tiles ``text`` takes on the board."""
     return len(_parse(text))

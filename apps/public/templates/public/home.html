@@ -1,50 +1,59 @@
 {% extends "public_base.html" %}
 {% load static %}
-{# The front page, in the shape every Titan app shares (DESIGN.md, "The front page"). The words are placeholders: replace them with the product's own, keeping the sections. #}
-{% block title %}{{ pwa.name }}: write it down, even in a tunnel{% endblock %}
-{% block description %}Notes that save on your phone first and send themselves when you're back online.{% endblock %}
-{% block share_title %}Write it down, even in a tunnel.{% endblock %}
-{% block share_description %}Notes that save on your phone first and send themselves when you're back online.{% endblock %}
-{% block extra_js %}<script src="{% static 'js/copy.js' %}" defer></script>{% endblock %}
-{% block content %}
-  {# 2. Proposition: the promise, and one way in, named for the first job. #}
-  <section class="hero stack">
-    <p class="eyebrow">Notes for when the signal drops</p>
-    <h1>Write it down, even in a tunnel.</h1>
-    <p class="hero__lead">Notes that save on your phone first and send themselves when you're back online.</p>
-    {% if user.is_authenticated %}
-      <a class="button button--block" href="{% url 'notes:list' %}">Open the app</a>
-    {% else %}
-      <a class="button button--block" href="{% url 'accounts:sign_in' %}?next={% url 'notes:list' %}">Write a note</a>
-      <p class="hero__note">Free. Sign in with your email, no password.</p>
-    {% endif %}
-  </section>
-
-  {# 3. The product, live: the app's own note list, drawn with demo notes. #}
-  <figure class="showcase">
-    <div class="showcase__screen" inert>
-      <p class="showcase__bar">{{ pwa.name }}</p>
-      {% include "notes/_note_items.html" %}
+{# The front page, in the shape every Titan app shares (DESIGN.md, "The front page"). The board in the hero is the real one (static/css/board.css), drawn with demo boards by apps/public/board.py. #}
+{% block title %}{{ pwa.name }}: turn your TV into a split-flap board{% endblock %}
+{% block description %}Type a message from your phone, or let Claude post the news, the weather and your trains. Your TV flips, tile by tile, to show it.{% endblock %}
+{% block share_title %}Turn your TV into a split-flap board{% endblock %}
+{% block share_description %}Type a message from your phone, or let Claude post the news, the weather and your trains. Your TV flips, tile by tile, to show it.{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/board.css' %}">{% endblock %}
+{% block extra_js %}
+  <script src="{% static 'js/front_board.js' %}" defer></script>
+  <script src="{% static 'js/copy.js' %}" defer></script>
+{% endblock %}
+{% block hero %}
+  {# 2 and 3. Proposition, and the product, live: the board itself, flipping through demo boards. #}
+  <section class="hero hero--dark">
+    <div class="hero__body stack">
+      <h1>Turn your TV into a split-flap board</h1>
+      <p class="hero__lead">Type a message from your phone, or let Claude post the news, the weather and your trains. Your TV flips, tile by tile, to show it.</p>
+      {% if user.is_authenticated %}
+        <a class="button button--block button--accent" href="{% url 'boards:manage' %}">Open the app</a>
+      {% else %}
+        <a class="button button--block button--accent" href="{% url 'accounts:sign_in' %}?next={% url 'boards:manage' %}">Get your board</a>
+        <p class="hero__note">Free. No password: we email you a link.</p>
+      {% endif %}
     </div>
-    <figcaption class="showcase__caption">Your notes, newest first. One written offline waits on the phone and sends itself.</figcaption>
-  </figure>
-
-  {# 4. How it works (optional): three tiles. #}
+    <figure class="hero__board">
+      <div class="board-fit">
+        <div class="board board--fluid" role="img" aria-label="{{ board.label }}" data-front-board
+             data-frames="{{ board.frames_json }}" data-names="{{ board.names_json }}" data-labels="{{ board.labels_json }}">
+          <div class="grid">
+            {% for cell in board.cells %}<div class="cell"><div class="half top"><span class="face{% if cell.tile %} tile t-{{ cell.tile }}{% endif %}">{{ cell.char }}</span></div><div class="half bottom"><span class="face{% if cell.tile %} tile t-{{ cell.tile }}{% endif %}">{{ cell.char }}</span></div></div>{% endfor %}
+          </div>
+          <div class="engrave"><span data-board-name>{{ board.name }}</span><span class="leds">{% for name in board.names %}<span class="led{% if forloop.first %} on{% endif %}"></span>{% endfor %}</span></div>
+        </div>
+      </div>
+      <figcaption class="hero__caption">Claude posted this at seven. Every new message flips in, tile by tile.</figcaption>
+    </figure>
+  </section>
+{% endblock %}
+{% block content %}
+  {# 4. How it works: three tiles. #}
   <ul class="tiles" aria-label="How it works">
     <li class="tile">
-      <svg class="tile__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
-      <p class="tile__title">Write</p>
-      <p class="meta">Type it and tap Add. That's the app.</p>
+      <svg class="tile__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v12H3zM3 6l9 7 9-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+      <p class="tile__title">Sign up</p>
+      <p class="meta">Enter your email. We send a link and a code, never a password.</p>
     </li>
     <li class="tile">
-      <svg class="tile__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M8.5 8.5a5 5 0 0 0 0 7M5.6 5.6a9 9 0 0 0 0 12.8M15.5 15.5a5 5 0 0 0 0-7M18.4 18.4a9 9 0 0 0 0-12.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      <p class="tile__title">Go offline</p>
-      <p class="meta">No signal? It saves on the phone and sends later.</p>
+      <svg class="tile__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v12H3zM8 21h8M12 17v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg>
+      <p class="tile__title">Open it on the TV</p>
+      <p class="meta">Any TV with a web browser. The board fills the screen and keeps itself up to date.</p>
     </li>
     <li class="tile">
-      <svg class="tile__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h8a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM11 18h2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      <p class="tile__title">Install</p>
-      <p class="meta">Add it to your home screen. It opens like an app.</p>
+      <svg class="tile__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4V5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+      <p class="tile__title">Post to it</p>
+      <p class="meta">Type a message yourself, or let Claude post one every morning.</p>
     </li>
   </ul>
 
@@ -52,19 +61,19 @@
     {# 5. From your AI chat. Who may connect is apps/mcp/policy.py: widen it before launch, or take this section out. #}
     <section class="card stack" id="mcp" aria-labelledby="mcp-title">
       <p class="eyebrow">Or just ask</p>
-      <h2 id="mcp-title">Use it from your AI chat</h2>
-      <p>Connect {{ pwa.name }} to Claude or ChatGPT and ask in plain words. It reads and writes your notes, and only yours, once you sign in.</p>
+      <h2 id="mcp-title">Let Claude run your board</h2>
+      <p>Connect {{ pwa.name }} to Claude and ask in plain words. Set it up as a Routine and Claude posts to your TV on a schedule, while you make the coffee.</p>
       <div class="chat">
-        <p class="chat__you">What did I note about the plumber?</p>
-        <p class="chat__reply">One note, 12 minutes ago: "Call the plumber back about Thursday."</p>
-        <p class="chat__you">Add one: buy bin bags.</p>
-        <p class="chat__reply">Done. It's at the top of your notes.</p>
+        <p class="chat__you">Every weekday at 7, put the weather and my first train on the board.</p>
+        <p class="chat__reply">Done. Tomorrow at 07:00 your TV shows London's forecast, then the 07:52 to Cambridge.</p>
+        <p class="chat__you">And remind everyone the bins go out tonight.</p>
+        <p class="chat__reply">It's on the board now.</p>
       </div>
       <p class="eyebrow">Try asking</p>
       <ul class="asks">
-        <li>What did I write down last week?</li>
-        <li>Note that the meeting moved to 3pm</li>
-        <li>Turn my notes from today into a to-do list</li>
+        <li>Post today's top three headlines</li>
+        <li>Put a countdown to Friday's party on the board</li>
+        <li>Show the next trains from Kings Cross to York</li>
       </ul>
       <p class="meta">Add this address as a connector, then sign in:</p>
       <p class="copy-field">
@@ -72,16 +81,17 @@
         <button class="button button--secondary" type="button" data-copy="{{ mcp_url }}" data-copy-target="mcp-url" data-copied-label="Copied" hidden>Copy</button>
       </p>
       <p><a href="{% url 'public:help' %}#use-with-ai">How to add it to Claude or ChatGPT</a></p>
+      <p class="meta">Claude can post to your boards and read what's on them. It can't see anyone else's, and your TV's link stays yours.</p>
     </section>
   {% endif %}
 
   {# 7. Closing action: the promise again, and the same way in. #}
   <section class="closing stack">
-    <h2>Never lose the thought.</h2>
+    <h2>Your morning, on the wall.</h2>
     {% if user.is_authenticated %}
-      <a class="button button--block" href="{% url 'notes:list' %}">Open the app</a>
+      <a class="button button--block" href="{% url 'boards:manage' %}">Open the app</a>
     {% else %}
-      <a class="button button--block" href="{% url 'accounts:sign_in' %}?next={% url 'notes:list' %}">Write a note</a>
+      <a class="button button--block" href="{% url 'accounts:sign_in' %}?next={% url 'boards:manage' %}">Get your board</a>
     {% endif %}
   </section>
 {% endblock %}

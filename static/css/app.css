@@ -11,6 +11,8 @@
   --brand: #1C1B1A;
   --brand-text: #ffffff;
   --brand-text-soft: rgb(255 255 255 / 35%);
+  --brand-text-2: #c9c4b8;
+  --accent: #f5c22b;
   --bg: #f6f7f9;
   --card: #ffffff;
   --text-1: #14171a;
@@ -20,7 +22,7 @@
   --warn-text: #6b4e00;
   --error: #b42318;
 
-  /* Type: one family, seven sizes. */
+  /* Type: one family, eight sizes. */
   --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --type-sm: 0.8125rem;
   --type-base: 1rem;
@@ -29,6 +31,7 @@
   --type-xl: 1.375rem;
   --type-2xl: 1.5rem;
   --type-3xl: 2rem;
+  --type-4xl: 2.75rem;
   --leading: 1.5;
 
   /* Space: the shared 4px scale (DESIGN.md); use only these. */
@@ -145,23 +148,21 @@ a { color: var(--brand); }
 .hero__lead { font-size: var(--type-lg); color: var(--text-2); margin: 0; }
 .hero__note { margin-top: var(--space-sm); color: var(--text-2); font-size: var(--type-sm); text-align: center; }
 
-/* The product, live: the app's own component with demo data, in a frame. */
-.showcase { margin: 0 0 var(--space-lg); }
-.showcase__screen {
-  overflow: hidden;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-card);
-  padding: 0 var(--space-lg);
-}
-.showcase__bar {
-  margin: 0 calc(-1 * var(--space-lg));
-  padding: var(--space-sm) var(--space-lg);
+/* The front page's proposition on the board's charcoal, full width, with
+   the product under it: the board itself (board.css), as wide as it fits. */
+.hero--dark {
+  padding: var(--space-3xl) var(--space-lg);
   background: var(--brand);
   color: var(--brand-text);
-  font-weight: 600;
+  text-align: center;
 }
-.showcase__caption { margin-top: var(--space-sm); color: var(--text-2); font-size: var(--type-sm); }
+.hero__body { max-width: 40rem; margin: 0 auto; }
+.hero--dark .hero__lead, .hero--dark .hero__note { color: var(--brand-text-2); }
+.hero__board { max-width: 60rem; margin: var(--space-3xl) auto 0; }
+.hero__caption { margin-top: var(--space-lg); color: var(--brand-text-2); font-size: var(--type-sm); }
+@media (min-width: 40rem) {
+  .hero--dark h1 { font-size: var(--type-4xl); line-height: 1.1; text-wrap: balance; }
+}
 
 /* How it works: three tiles, one under another on a phone. */
 .tiles { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-md); }
@@ -263,6 +264,7 @@ input[type="text"], input[type="email"], input[type="password"], textarea {
 }
 .button--quiet { background: transparent; color: var(--brand); padding-inline: var(--space-sm); }
 .button--block { display: flex; align-items: center; justify-content: center; width: 100%; }
+.button--accent { background: var(--accent); color: var(--brand); }
 .button--secondary { background: transparent; color: var(--brand); box-shadow: inset 0 0 0 2px var(--brand); }
 .button:disabled { opacity: 0.6; cursor: progress; }
 /* mcp_auth's pages (templates/mcp_auth/): its buttons carry no classes, so style them here */
