@@ -36,8 +36,8 @@ templates/       base.html (the app, /app/), public_base.html, includes
 static/js/       plain JavaScript, classic scripts, no build step
 static/css/      app.css: the design system's tokens on :root, components
                  below (DESIGN.md)
-docs/            accounts, android-tv, testing, user-testing, onboarding-tour, pwa,
-                 security, performance, decisions/
+docs/            accounts, android-tv, board-animation, testing, user-testing,
+                 onboarding-tour, pwa, security, performance, decisions/
 .claude/skills/  writing the Titan docs kept in Linear (research, user
                  testing script, blog post), each with a length setting
 ```
