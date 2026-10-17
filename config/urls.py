@@ -24,6 +24,9 @@ urlpatterns = [
     # The installed app: everything under /app/ (apps/pwa/conf.py: SCOPE).
     path("app/", include("apps.pwa.urls")),
     path("app/", include("apps.notes.urls")),
+    path("app/", include("apps.boards.urls")),
+    # The TV: a display's board and its state, by the display's secret uuid.
+    path("d/", include("apps.boards.tv_urls")),
     path("app/", include("apps.design.urls")),
     path("", include("mcp_auth.urls")),
     path("mcp", mcp, name="mcp"),

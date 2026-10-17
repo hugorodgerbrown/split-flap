@@ -15,6 +15,7 @@ from apps.accounts.models import (
     mask_email,
     username_for,
 )
+from apps.boards.models import Board, BoardKind, Display
 from apps.notes.models import Note
 
 
@@ -95,3 +96,26 @@ class NoteFactory(factory.django.DjangoModelFactory):
     owner = factory.SubFactory(UserFactory)
     text = factory.Faker("sentence")
     written_at = factory.LazyFunction(timezone.now)
+
+
+class DisplayFactory(factory.django.DjangoModelFactory):
+    """A display with no boards; use ``apps.boards.services.display_for`` for a full one."""
+
+    class Meta:
+        """Factory metadata."""
+
+        model = Display
+
+    owner = factory.SubFactory(UserFactory)
+
+
+class BoardFactory(factory.django.DjangoModelFactory):
+    """A Custom board on a new display."""
+
+    class Meta:
+        """Factory metadata."""
+
+        model = Board
+
+    display = factory.SubFactory(DisplayFactory)
+    kind = BoardKind.CUSTOM

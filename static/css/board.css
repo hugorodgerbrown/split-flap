@@ -1,0 +1,176 @@
+/*
+ * static/css/board.css — the split-flap board the TV shows (/d/<uuid>/).
+ *
+ * Kept apart from app.css on purpose: the board draws a physical object
+ * (flaps, tiles, a frame), not the app's interface, so its palette and
+ * measurements are its own. docs/decisions/the-tv-board-has-its-own-stylesheet.md
+ */
+/* Barlow and Barlow Semi Condensed, self-hosted (SIL OFL, static/fonts/OFL.txt). */
+@font-face { font-family: "Barlow Semi Condensed"; font-weight: 600; font-display: swap; src: url("../fonts/barlow-semi-condensed-600-latin.woff2") format("woff2"); }
+@font-face { font-family: "Barlow"; font-weight: 500; font-display: swap; src: url("../fonts/barlow-500-latin.woff2") format("woff2"); }
+@font-face { font-family: "Barlow"; font-weight: 600; font-display: swap; src: url("../fonts/barlow-600-latin.woff2") format("woff2"); }
+
+/* Layout: one framed split-flap board centred on a dark wall, sized to the screen; a hidden control bar rises on input. */
+:root {
+  --wall: #070707;
+  --frame-hi: #1c1b1a;
+  --frame-lo: #0e0e0d;
+  --well: #090909;
+  --flap-top-a: #232323;
+  --flap-top-b: #1c1c1c;
+  --flap-bot-a: #191919;
+  --flap-bot-b: #141414;
+  --ink: #eeeae1;
+  --engrave: #4b4841;
+  --led-on: #f3ead2;
+  --ui-bg: rgba(22, 22, 21, 0.9);
+  --ui-line: #34322e;
+  --ui-fg: #eeeae1;
+  --ui-dim: #8f8a7f;
+  --ui-accent: #f5c22b;
+  --tile-r: #d8372f; --tile-o: #ee7a1f; --tile-y: #f5c22b; --tile-g: #2f9d5b;
+  --tile-b: #2069cf; --tile-v: #7a4bc8; --tile-w: #ece9e1;
+  --font-flap: "Barlow Semi Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --font-ui: "Barlow", "Helvetica Neue", Arial, sans-serif;
+  color-scheme: dark;
+  --cw: 40px; --ch: 55px; --gx: 5px; --gy: 6px; --pad: 34px; --fs: 34px; --r: 3px;
+}
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--wall); color: var(--ui-fg); overflow: hidden; font-family: var(--font-ui); }
+body.idle { cursor: none; }
+
+.stage {
+  height: 100%; box-sizing: border-box; display: grid; place-items: center;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 16px;
+  background: radial-gradient(ellipse at 50% 42%, #141312 0%, var(--wall) 70%);
+}
+
+/* The physical board */
+.board {
+  position: relative;
+  padding: var(--pad) var(--pad) calc(var(--pad) * 1.6);
+  background: linear-gradient(180deg, var(--frame-hi), var(--frame-lo));
+  border-radius: calc(var(--cw) * 0.32);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.8),
+    0 0 0 1px #000,
+    0 calc(var(--cw) * 0.6) calc(var(--cw) * 2) rgba(0, 0, 0, 0.75);
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), var(--cw));
+  grid-auto-rows: var(--ch);
+  column-gap: var(--gx);
+  row-gap: var(--gy);
+  padding: calc(var(--gy) * 0.8);
+  margin: calc(var(--gy) * -0.8);
+  background: var(--well);
+  border-radius: calc(var(--r) * 2);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.9);
+}
+.engrave {
+  position: absolute; left: var(--pad); right: var(--pad);
+  bottom: calc(var(--pad) * 0.5);
+  display: flex; align-items: center; justify-content: space-between;
+  font: 600 calc(var(--cw) * 0.3) / 1 var(--font-ui);
+  letter-spacing: 0.32em; text-transform: uppercase;
+  color: var(--engrave);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.05), 0 -1px 0 rgba(0, 0, 0, 0.9);
+}
+.leds { display: flex; gap: calc(var(--cw) * 0.28); }
+.led {
+  width: calc(var(--cw) * 0.14); height: calc(var(--cw) * 0.14); border-radius: 50%;
+  background: #262522; box-shadow: inset 0 1px 1px rgba(0,0,0,.9);
+  transition: background .4s, box-shadow .4s;
+}
+.led.on { background: var(--led-on); box-shadow: 0 0 calc(var(--cw) * 0.2) rgba(243, 234, 210, 0.55); }
+
+/* One flap module: two static halves, two moving leaves */
+.cell {
+  position: relative;
+  perspective: calc(var(--ch) * 4);
+  border-radius: var(--r);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+}
+.half, .leaf {
+  position: absolute; left: 0; right: 0; height: 50%;
+  overflow: hidden;
+  backface-visibility: hidden;
+}
+.top { top: 0; border-radius: var(--r) var(--r) 0 0; background: linear-gradient(180deg, var(--flap-top-a), var(--flap-top-b)); box-shadow: inset 0 1px 0 rgba(255,255,255,.045); }
+.bottom { bottom: 0; border-radius: 0 0 var(--r) var(--r); background: linear-gradient(180deg, var(--flap-bot-a), var(--flap-bot-b)); }
+.leaf { z-index: 2; will-change: transform; }
+.leaf.top { transform-origin: 50% 100%; }
+.leaf.bottom { transform-origin: 50% 0%; }
+.face {
+  position: absolute; left: 0; right: 0; height: var(--ch);
+  font: 600 var(--fs) / var(--ch) var(--font-flap);
+  text-align: center; color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.top .face { top: 0; }
+.bottom .face { bottom: 0; }
+.face.tile { inset: 0; height: auto; }
+.top .face.tile { bottom: 0; }
+.face.t-r { background: var(--tile-r); } .face.t-o { background: var(--tile-o); }
+.face.t-y { background: var(--tile-y); } .face.t-g { background: var(--tile-g); }
+.face.t-b { background: var(--tile-b); } .face.t-v { background: var(--tile-v); }
+.face.t-w { background: var(--tile-w); }
+.face.icon {
+  background: var(--ink);
+  -webkit-mask: var(--icon) center / 74% auto no-repeat;
+  mask: var(--icon) center / 74% auto no-repeat;
+}
+.top .face.tile { box-shadow: inset 0 1px 0 rgba(255,255,255,.22); }
+.bottom .face.tile { filter: brightness(0.9); }
+/* The split between leaves, with the axle notches at each side */
+.cell::after {
+  content: ""; position: absolute; left: 0; right: 0; top: 50%; z-index: 3;
+  height: max(1px, calc(var(--ch) * 0.02)); transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.92);
+}
+.cell::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 50%; z-index: 3;
+  height: calc(var(--ch) * 0.075); transform: translateY(-50%);
+  background: linear-gradient(90deg, #050505 0 7%, transparent 7% 93%, #050505 93%);
+}
+
+/* Control bar */
+.hud {
+  position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: center;
+  width: max-content; max-width: calc(100% - 32px); box-sizing: border-box;
+  padding: 6px; border-radius: 14px;
+  background: var(--ui-bg); border: 1px solid var(--ui-line);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+  transition: opacity .35s, transform .35s;
+  z-index: 20;
+}
+.idle .hud { opacity: 0; transform: translateX(-50%) translateY(10px); pointer-events: none; }
+.tabs { display: flex; gap: 2px; padding: 2px; background: #0d0d0c; border-radius: 10px; }
+.hud button {
+  font: 500 15px/1 var(--font-ui); color: var(--ui-dim);
+  background: transparent; border: 0; border-radius: 8px;
+  padding: 10px 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 7px;
+  transition: color .15s, background .15s;
+}
+.hud button:hover { color: var(--ui-fg); background: rgba(255,255,255,.05); }
+.hud button:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 1px; }
+.tabs button[aria-selected="true"], .tabs button[aria-pressed="true"] { color: #141414; background: var(--ui-fg); }
+.hud button[aria-pressed="true"] { color: var(--ui-fg); }
+.hud button[aria-pressed="true"] .dot { background: var(--ui-accent); box-shadow: 0 0 8px rgba(245,194,43,.6); }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: #3d3b36; }
+.sep { width: 1px; align-self: stretch; margin: 6px 2px; background: var(--ui-line); }
+.hud svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.tag { font: 600 11px/1 var(--font-ui); letter-spacing: .14em; text-transform: uppercase; color: var(--ui-dim); padding: 0 10px; }
+
+@media (max-width: 640px) {
+  .hud button { padding: 9px 10px; font-size: 14px; }
+  .hud .label-opt, .tag { display: none; }
+}
