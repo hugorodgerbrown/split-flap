@@ -7,8 +7,8 @@ import pytest
 from django.test import Client
 from django.urls import reverse
 
-from apps.boards.models import BoardKind
 from apps.boards.services import display_for, post_message
+from tests.factories import BoardFactory
 
 pytestmark = pytest.mark.django_db
 
@@ -33,7 +33,7 @@ def test_state_is_json_with_an_etag(client: Client, user: Any) -> None:
     url = reverse("tv:state", args=[display.uuid])
     first = client.get(url)
     assert first.status_code == 200
-    assert [b["kind"] for b in first.json()["boards"]] == BoardKind.values
+    assert [b["name"] for b in first.json()["boards"]] == ["Home"]
     assert first["Cache-Control"] == "no-cache"
     assert client.get(url, headers={"If-None-Match": first["ETag"]}).status_code == 304
     post_message(display, "hello")
@@ -65,21 +65,22 @@ def test_manage_shows_the_tv_link(signed_in: Client, user: Any) -> None:
 
 def test_post_puts_the_message_on_the_board(signed_in: Client, user: Any) -> None:
     """A form post sets the board's message and goes back to the page."""
-    response = signed_in.post(reverse("boards:post"), {"kind": "weather", "text": "Sunny"})
+    BoardFactory.create(display=display_for(user), name="Weather", position=1)
+    response = signed_in.post(reverse("boards:post"), {"board": "Weather", "text": "Sunny"})
     assert response.status_code == 302
-    assert display_for(user).boards.get(kind="weather").message == "Sunny"
+    assert display_for(user).boards.get(name="Weather").message == "Sunny"
 
 
 def test_post_refuses_an_unknown_board(signed_in: Client) -> None:
     """An invalid form redraws the page with its errors."""
-    response = signed_in.post(reverse("boards:post"), {"kind": "sports", "text": "Goal"})
+    response = signed_in.post(reverse("boards:post"), {"board": "Sports", "text": "Goal"})
     assert response.status_code == 400
 
 
 def test_post_refuses_a_message_that_wont_fit(signed_in: Client, user: Any) -> None:
     """A message longer than six rows is refused with the reason, not cut off."""
     text = "\n".join(["row"] * 7)
-    response = signed_in.post(reverse("boards:post"), {"kind": "custom", "text": text})
+    response = signed_in.post(reverse("boards:post"), {"board": "Home", "text": text})
     assert response.status_code == 400
     assert "needs 7 rows" in response.content.decode()
-    assert display_for(user).boards.get(kind="custom").message == ""
+    assert display_for(user).boards.get(name="Home").message == ""

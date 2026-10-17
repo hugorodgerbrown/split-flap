@@ -3,18 +3,20 @@
 from typing import Any
 
 import pytest
+from django.db import IntegrityError, connection
+from django.db.migrations.executor import MigrationExecutor
 
-from apps.boards.models import MAX_MESSAGE_LENGTH, Board, BoardKind, Display
-from apps.boards.services import BoardError, display_for, post_message
+from apps.boards.models import FIRST_BOARD_NAME, MAX_MESSAGE_LENGTH, Board, Display
+from apps.boards.services import BoardError, display_for, find_board, post_message
 from tests.factories import BoardFactory, DisplayFactory, UserFactory
 
 pytestmark = pytest.mark.django_db
 
 
-def test_display_for_makes_one_display_with_every_board(user: Any) -> None:
-    """The first call makes the display and a board of each kind, in order."""
+def test_display_for_makes_one_display_with_one_board(user: Any) -> None:
+    """The first call makes the display and its Home board, and later calls find it."""
     display = display_for(user)
-    assert [b.kind for b in display.boards.all()] == BoardKind.values
+    assert [b.name for b in display.boards.all()] == [FIRST_BOARD_NAME]
     assert display_for(user) == display
     assert Display.objects.count() == 1
 
@@ -37,29 +39,61 @@ def test_for_user_filters_by_owner() -> None:
     assert list(Board.objects.for_user(mine.display.owner)) == [mine]
 
 
+def test_board_names_are_unique_per_display_ignoring_case() -> None:
+    """A display can't have News and news; another display can have its own News."""
+    board = BoardFactory.create(name="News")
+    BoardFactory.create(name="News")
+    with pytest.raises(IntegrityError):
+        BoardFactory.create(display=board.display, name="news")
+
+
+def test_find_board_by_name_ignoring_case(user: Any) -> None:
+    """A board is found by its name in any case, and the first board by default."""
+    display = display_for(user)
+    weather = BoardFactory.create(display=display, name="Weather", position=1)
+    assert find_board(display, "  WEATHER ") == weather
+    assert find_board(display).name == FIRST_BOARD_NAME
+
+
+def test_find_board_names_the_boards_when_it_fails(user: Any) -> None:
+    """An unknown name is refused with the names there are, so a model can correct it."""
+    display = display_for(user)
+    with pytest.raises(BoardError, match="The boards are: Home"):
+        find_board(display, "Sports")
+
+
+def test_find_board_on_a_display_with_no_boards() -> None:
+    """A display whose boards were all deleted says so."""
+    with pytest.raises(BoardError, match="none yet"):
+        find_board(DisplayFactory.create())
+
+
 def test_post_message_sets_and_clears(user: Any) -> None:
     """A message is stored with its time; an empty one clears both."""
     display = display_for(user)
-    board = post_message(display, "  Dinner at eight  ", BoardKind.NEWS)
+    BoardFactory.create(display=display, name="News", position=1)
+    board = post_message(display, "  Dinner at eight  ", "news")
+    assert board.name == "News"
     assert board.message == "Dinner at eight"
     assert board.posted_at is not None
-    board = post_message(display, "", BoardKind.NEWS)
+    board = post_message(display, "", "News")
     assert board.message == ""
     assert board.posted_at is None
 
 
 @pytest.mark.parametrize(
-    ("text", "kind"),
+    ("text", "name"),
     [
-        ("hello", "sports"),
-        ("x" * (MAX_MESSAGE_LENGTH + 1), BoardKind.CUSTOM),
-        ("\n".join(["row"] * 7), BoardKind.CUSTOM),
+        ("hello", "Sports"),
+        ("x" * (MAX_MESSAGE_LENGTH + 1), None),
+        ("\n".join(["row"] * 7), None),
     ],
 )
-def test_post_message_refuses_bad_input(user: Any, text: str, kind: str) -> None:
+def test_post_message_refuses_bad_input(user: Any, text: str, name: str | None) -> None:
     """An unknown board or a message that won't fit is a BoardError, not a save."""
     with pytest.raises(BoardError):
-        post_message(display_for(user), text, kind)
+        post_message(display_for(user), text, name)
+    assert display_for(user).boards.get().message == ""
 
 
 def test_state_version_changes_with_content(user: Any) -> None:
@@ -71,10 +105,34 @@ def test_state_version_changes_with_content(user: Any) -> None:
     assert Display.objects.get(pk=display.pk).state()["version"] != before
 
 
+def test_state_has_names_and_messages_only(user: Any) -> None:
+    """The TV is told each board's name and message, and nothing about feeds."""
+    board = display_for(user).boards.get()
+    assert board.as_json() == {"name": FIRST_BOARD_NAME, "message": "", "posted_at": None}
+
+
 def test_to_string() -> None:
-    """Displays read as their name; boards as kind on display."""
+    """Displays read as their name; boards as their name on the display."""
     board = BoardFactory.create(
-        display=DisplayFactory.create(name="Kitchen", owner=UserFactory.create())
+        name="Weather", display=DisplayFactory.create(name="Kitchen", owner=UserFactory.create())
     )
     assert str(board.display) == "Kitchen"
-    assert str(board) == "Custom on Kitchen"
+    assert str(board) == "Weather on Kitchen"
+
+
+@pytest.mark.django_db(transaction=True)
+def test_migration_names_boards_after_their_kind() -> None:
+    """Boards made before names keep their place, named after their old kind."""
+    executor = MigrationExecutor(connection)
+    executor.migrate([("boards", "0001_initial")])
+    old_apps = executor.loader.project_state([("boards", "0001_initial")]).apps
+    old_display = old_apps.get_model("boards", "Display")
+    old_board = old_apps.get_model("boards", "Board")
+    display = old_display.objects.create(owner_id=UserFactory.create().pk)
+    for position, kind in enumerate(["custom", "news", "weather", "travel"]):
+        old_board.objects.create(display=display, kind=kind, position=position)
+    executor = MigrationExecutor(connection)
+    executor.loader.build_graph()
+    executor.migrate(executor.loader.graph.leaf_nodes())
+    names = Board.objects.filter(display_id=display.pk).values_list("name", flat=True)
+    assert list(names) == ["Custom", "News", "Weather", "Travel"]

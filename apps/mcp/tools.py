@@ -8,8 +8,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
-from apps.boards.models import BoardKind
-from apps.boards.services import BoardError, display_for, post_message
+from apps.boards.services import BoardError, display_for, find_board, post_message
 from apps.notes.forms import NoteForm
 from apps.notes.models import Note
 from apps.public.pages import page_as_markdown
@@ -81,12 +80,20 @@ def list_boards(user: Any, args: dict[str, Any]) -> dict[str, Any]:
     return {"display": display.name, "boards": [b.as_json() for b in display.boards.all()]}
 
 
+def _board_name(args: dict[str, Any]) -> str | None:
+    """Return the board name a tool was given, if any."""
+    name = args.get("board")
+    if name is not None and not isinstance(name, str):
+        raise ToolError("board must be a string.")
+    return name
+
+
 def get_board(user: Any, args: dict[str, Any]) -> dict[str, Any]:
     """Return one board on the user's display."""
-    kind = args.get("board", BoardKind.CUSTOM)
-    board = next((b for b in display_for(user).boards.all() if b.kind == kind), None)
-    if board is None:
-        raise ToolError(f"There's no {kind!r} board. Use one of: {', '.join(BoardKind.values)}.")
+    try:
+        board = find_board(display_for(user), _board_name(args))
+    except BoardError as error:
+        raise ToolError(str(error)) from error
     return board.as_json()
 
 
@@ -96,7 +103,7 @@ def post_board_message(user: Any, args: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(text, str):
         raise ToolError("text must be a string.")
     try:
-        board = post_message(display_for(user), text, args.get("board", BoardKind.CUSTOM))
+        board = post_message(display_for(user), text, _board_name(args))
     except BoardError as error:
         raise ToolError(str(error)) from error
     return board.as_json()
@@ -153,14 +160,22 @@ TOOLS: dict[str, Tool] = {
                 "line break to start a new row. {r} {o} {y} {g} {b} {v} {w} are red, orange, "
                 "yellow, green, blue, violet and white colour tiles. These emoji show as "
                 "pictograms: ☀ ⛅ ☁ 🌧 ⛈ ❄ 🌙 ☂ 🚆 ✈ 🚗 🚲 🏠 ☕ 🎵 📰 ❤ ★ 😊 ✓ ✗ ↑ ↓ ← →. "
-                "The TV turns to the board within a few seconds. An empty text clears the "
-                "board so it shows its own content again."
+                "The TV turns to the board within a few seconds and shows the message until "
+                "the next one; boards fetch nothing themselves. An empty text clears the "
+                "board, which then shows its name."
             ),
             input_schema={
                 "type": "object",
                 "properties": {
                     "text": {"type": "string", "maxLength": 400},
-                    "board": {"type": "string", "enum": BoardKind.values, "default": "custom"},
+                    "board": {
+                        "type": "string",
+                        "maxLength": 40,
+                        "description": (
+                            "The board's name, as list_boards gives it; case doesn't matter. "
+                            "Leave it out for the first board."
+                        ),
+                    },
                 },
                 "required": ["text"],
             },
@@ -173,7 +188,14 @@ TOOLS: dict[str, Tool] = {
             input_schema={
                 "type": "object",
                 "properties": {
-                    "board": {"type": "string", "enum": BoardKind.values, "default": "custom"}
+                    "board": {
+                        "type": "string",
+                        "maxLength": 40,
+                        "description": (
+                            "The board's name, as list_boards gives it; case doesn't matter. "
+                            "Leave it out for the first board."
+                        ),
+                    }
                 },
             },
             func=get_board,
@@ -181,9 +203,9 @@ TOOLS: dict[str, Tool] = {
         Tool(
             name="list_boards",
             description=(
-                "List the boards on the user's split-flap display (Custom, News, Weather, "
-                "Travel) and the message each shows. An empty message means the board shows "
-                "its own content."
+                "List the boards on the user's split-flap display, in the order the TV shows "
+                "them, with the message each shows. The user names their boards; an empty "
+                "message means the board shows its name."
             ),
             input_schema=NO_ARGUMENTS,
             func=list_boards,

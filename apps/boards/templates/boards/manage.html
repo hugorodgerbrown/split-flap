@@ -17,10 +17,10 @@
     <form class="stack" method="post" action="{% url 'boards:post' %}">
       {% csrf_token %}
       {{ form.non_field_errors }}
-      <label class="field"><span class="field__label">Board</span>{{ form.kind }}</label>
+      <label class="field"><span class="field__label">Board</span>{{ form.board }}</label>
       <label class="field"><span class="field__label">Message</span>{{ form.text }}</label>
       {{ form.text.errors }}
-      <p class="meta" id="text-help">Up to six rows of 22 tiles. Emoji like ☀ 🌧 🚆 ❤ show as pictograms, and {r} {o} {y} {g} {b} {v} {w} make colour tiles. Leave it empty to put the board's own content back.</p>
+      <p class="meta" id="text-help">Up to six rows of 22 tiles. Emoji like ☀ 🌧 🚆 ❤ show as pictograms, and {r} {o} {y} {g} {b} {v} {w} make colour tiles. Leave it empty to clear the board.</p>
       <button class="button" type="submit">Show on the board</button>
     </form>
   </section>
@@ -29,12 +29,12 @@
       {% for board in boards %}
         <li class="item">
           <div>
-            <p class="item__title">{{ board.get_kind_display }}</p>
+            <p class="item__title">{{ board.name }}</p>
             {% if board.message %}
               <p>{{ board.message|linebreaksbr }}</p>
               <p class="meta"><time datetime="{{ board.posted_at|date:'c' }}">Posted {{ board.posted_at|date:"j M, H:i" }}</time></p>
             {% else %}
-              <p class="meta">Showing its own content</p>
+              <p class="meta">Empty: the TV shows its name</p>
             {% endif %}
           </div>
         </li>

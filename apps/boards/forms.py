@@ -1,21 +1,29 @@
 """Forms for posting to a board from the app."""
 
+from typing import Any, cast
+
 from django import forms
 
-from apps.boards.models import MAX_MESSAGE_LENGTH, BoardKind
+from apps.boards.models import MAX_MESSAGE_LENGTH, Display
 from apps.boards.services import BoardError, check_fits
 
 
 class PostMessageForm(forms.Form):
-    """A message for one board; an empty message puts the board's own content back."""
+    """A message for one of a display's boards; an empty message clears the board."""
 
-    kind = forms.ChoiceField(choices=BoardKind.choices, initial=BoardKind.CUSTOM)
+    board = forms.ChoiceField()
     text = forms.CharField(
         max_length=MAX_MESSAGE_LENGTH,
         required=False,
         strip=True,
         widget=forms.Textarea(attrs={"rows": 3, "aria-describedby": "text-help"}),
     )
+
+    def __init__(self, display: Display, *args: Any, **kwargs: Any) -> None:
+        """Offer the boards on ``display``, by name."""
+        super().__init__(*args, **kwargs)
+        board = cast(forms.ChoiceField, self.fields["board"])
+        board.choices = [(b.name, b.name) for b in display.boards.all()]
 
     def clean_text(self) -> str:
         """Refuse a message that would lose its end on the board."""
