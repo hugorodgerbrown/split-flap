@@ -4,9 +4,10 @@
  * The server draws the first board (apps/public/board.py), so the page reads
  * the same without this script. With it, the board opens blank and flips the
  * first board in, as the display does when it loads, then every few seconds
- * turns each tile through the drum to the next board's symbol, flap by flap
- * (as static/js/splitflap.js does). Reduced motion shows each board without
- * flipping. It reads the drum and the pictograms from static/js/flaptext.js.
+ * turns each tile through the drum to the next board's symbol, flap by flap,
+ * in a diagonal wave (static/js/flapmotion.js, as splitflap.js does). Reduced
+ * motion shows each board without flipping. It reads the drum and the
+ * pictograms from static/js/flaptext.js.
  * The sound toggle under the board turns on the flap sound
  * (static/js/flap_sound.js); it stays hidden without motion, as there's
  * nothing to hear.
@@ -24,7 +25,8 @@
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // The drum's order and the pictograms, as splitflap.js turns through them.
-  const { DRUM, DRUM_POS: POS, ICON_MASKS } = self.FlapText;
+  const { DRUM_POS: POS, ICON_MASKS } = self.FlapText;
+  const { nextFlap, waveDelay } = self.FlapMotion;
 
   function setFace(face, sym) {
     face.textContent = '';
@@ -89,9 +91,7 @@
         snap(cell, cell.target);
         break;
       }
-      // Fast while far from the target, then settle for the last few flaps.
-      const left = (POS.get(cell.target) - POS.get(cell.cur) + DRUM.length) % DRUM.length;
-      await flip(cell, DRUM[(POS.get(cell.cur) + 1) % DRUM.length], left > 8 ? 0.5 : 1);
+      await flip(cell, nextFlap(cell.cur, cell.target), 1);
     }
     cell.running = false;
   }
@@ -105,9 +105,7 @@
     cells.forEach((cell, k) => {
       cell.target = frames[i][k];
       if (cell.running || cell.cur === cell.target) return;
-      // A left-to-right wave with a little scatter.
-      const delay = (k % 22) * 32 + Math.floor(k / 22) * 14 + Math.random() * 70;
-      setTimeout(() => run(cell), delay);
+      setTimeout(() => run(cell), waveDelay(Math.floor(k / 22), k % 22));
     });
   }
 

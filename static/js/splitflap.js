@@ -18,7 +18,8 @@
  * page's Replay button (state.replays) flips the board again from blank.
  */
 (() => {
-  const { COLS, ROWS, ICON_MASKS: ICON_URL, DRUM, DRUM_POS, parse, message } = self.FlapText;
+  const { COLS, ROWS, ICON_MASKS: ICON_URL, parse, message } = self.FlapText;
+  const { nextFlap, waveDelay } = self.FlapMotion;
   const CYCLE_MS = 30000;
   // Flip speed presets: each multiplies flap timing and the cascade delay.
   const SPEEDS = [{ name: 'Slow', k: 1.8 }, { name: 'Normal', k: 1 }, { name: 'Fast', k: 0.5 }];
@@ -90,9 +91,7 @@
     async run() {
       while (this.cur !== this.target) {
         if (reduceMotion || document.hidden) { this.snap(this.target); break; }
-        // Spin fast while far from the target, then settle at normal speed for the last few flaps.
-        const left = (DRUM_POS.get(this.target) - DRUM_POS.get(this.cur) + DRUM.length) % DRUM.length;
-        await this.flip(DRUM[(DRUM_POS.get(this.cur) + 1) % DRUM.length], left > 10 ? 0.5 : 1);
+        await this.flip(nextFlap(this.cur, this.target));
       }
       this.running = false;
     }
@@ -149,8 +148,7 @@
     if (key === shown) return;
     shown = key;
     rows.forEach((syms, r) => syms.forEach((sym, c) => {
-      // A left-to-right wave with a little scatter.
-      cells[r * COLS + c].set(sym, (c * 32 + r * 14 + Math.random() * 70) * SPEEDS[speed].k);
+      cells[r * COLS + c].set(sym, waveDelay(r, c) * SPEEDS[speed].k);
     }));
   }
 

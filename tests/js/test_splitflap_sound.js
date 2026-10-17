@@ -4,6 +4,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import '../../static/js/flaptext.js';
+import '../../static/js/flapmotion.js';
 
 // The TV's page, as the server draws it with the sound setting ``sound``.
 const page = (sound, attrs = '') => `
