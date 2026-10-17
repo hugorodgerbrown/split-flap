@@ -79,7 +79,10 @@
       this.running = false;
       // Each module's motor runs at a slightly different speed, like the real thing.
       this.ms = 48 + Math.random() * 20;
+      // Flaps are numbered as they're played; only a newer one may be drawn over an older one.
+      this.played = 0;
       this.drawn = 0;
+      this.lag = 0;
       [this.sTop, this.sBot, this.lTop, this.lBot].forEach(h => setFace(h, ' '));
     }
     set(sym, delay) {
@@ -89,6 +92,8 @@
       setTimeout(() => this.run(), delay);
     }
     async run() {
+      // One delay for the whole turn: re-reading it per flap could draw a later flap before an earlier one.
+      this.lag = sound.lagMs();
       while (this.cur !== this.target) {
         if (reduceMotion || document.hidden) { this.snap(this.target); break; }
         await this.flip(nextFlap(this.cur, this.target));
@@ -96,7 +101,7 @@
       this.running = false;
     }
     snap(sym) {
-      this.drawn++;  // drop any flap still waiting to be drawn
+      this.drawn = this.played;  // drop any flap still waiting to be drawn
       this.a1?.cancel(); this.a2?.cancel();
       [this.sTop, this.sBot, this.lTop, this.lBot].forEach(h => setFace(h, sym));
       this.cur = sym;
@@ -105,9 +110,10 @@
     // The clack is played on time and the flap drawn sound.lagMs() later, so they're heard and seen together.
     flip(next, pace = 1) {
       const d = this.ms * pace * SPEEDS[speed].k;
-      const prev = this.cur, drawn = this.drawn;
+      const prev = this.cur, n = ++this.played;
       const draw = () => {
-        if (drawn !== this.drawn) return;
+        if (n <= this.drawn) return;
+        this.drawn = n;
         this.a1?.cancel(); this.a2?.cancel();
         setFace(this.sTop, next);
         setFace(this.sBot, prev);
@@ -116,8 +122,7 @@
         this.a1 = this.lTop.animate(TOP_FALL, { duration: d * 0.42, easing: 'cubic-bezier(.55,0,1,.45)', fill: 'forwards' });
         this.a2 = this.lBot.animate(BOTTOM_FALL, { duration: d * 0.58, delay: d * 0.42, fill: 'both' });
       };
-      const lag = sound.lagMs();
-      if (lag > 0) setTimeout(draw, lag); else draw();
+      if (this.lag > 0) setTimeout(draw, this.lag); else draw();
       setTimeout(() => sound.clack(), d * 0.65);
       this.cur = next;
       return new Promise(r => setTimeout(r, d));

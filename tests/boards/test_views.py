@@ -414,3 +414,13 @@ def test_tv_page_carries_the_sound_timing_and_replays(client: Client, user: Any)
     replay(display)
     content = client.get(reverse("tv:board", args=[display.uuid])).content
     assert b'data-sound-delay="200" data-replays="1"' in content
+
+
+def test_display_controls_update_in_place(signed_in: Client, user: Any) -> None:
+    """With htmx, each control posts and swaps its own card, so the page doesn't jump."""
+    set_sound(display_for(user), True)
+    content = signed_in.get(reverse("boards:manage")).content.decode()
+    assert 'id="display-controls"' in content
+    assert 'hx-select="#display-controls" hx-swap="outerHTML"' in content
+    for name in ("boards:sound", "boards:sound_delay", "boards:replay"):
+        assert f'hx-post="{reverse(name)}"' in content
