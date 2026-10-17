@@ -17,7 +17,7 @@
   </head>
   <body>
     <div class="stage">
-      <div class="board" id="board" data-state-url="{{ state_url }}" data-poll-seconds="{{ poll_seconds }}" data-sound="{{ display.sound|yesno:'on,off' }}">
+      <div class="board" id="board" data-state-url="{{ state_url }}" data-poll-seconds="{{ poll_seconds }}" data-sound="{{ display.sound|yesno:'on,off' }}" data-sound-delay="{{ display.sound_delay_ms }}" data-replays="{{ display.replays }}">
         <div class="grid" id="grid" aria-live="polite"></div>
         <div class="engrave"><span id="boardName"></span><span class="leds" id="leds"></span></div>
       </div>

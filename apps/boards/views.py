@@ -17,9 +17,16 @@ from django.templatetags.static import static
 from django.urls import reverse
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
-from apps.boards.forms import BoardNameForm, MessageForm, MoveForm, SoundForm
+from apps.boards.forms import BoardNameForm, MessageForm, MoveForm, SoundDelayForm, SoundForm
 from apps.boards.layout import COLOURS, PICTOGRAMS, Tile, board_tiles
-from apps.boards.models import MAX_BOARDS, MAX_MESSAGE_LENGTH, Board, Display
+from apps.boards.models import (
+    MAX_BOARDS,
+    MAX_MESSAGE_LENGTH,
+    MAX_SOUND_DELAY_MS,
+    SOUND_DELAY_STEP_MS,
+    Board,
+    Display,
+)
 from apps.boards.services import (
     BoardError,
     add_board,
@@ -28,7 +35,9 @@ from apps.boards.services import (
     move_board,
     post_message,
     rename_board,
+    replay,
     set_sound,
+    set_sound_delay,
 )
 from apps.core.decorators import signed_in_user
 from apps.public.connector import mcp_url
@@ -128,6 +137,9 @@ def _manage(request: HttpRequest, form: BoardNameForm, status: int = 200) -> Htt
             "mcp_url": mcp_url(),
             "form": form,
             "max_boards": MAX_BOARDS,
+            # The Sound timing stepper's two buttons post the next step either way.
+            "delay_less": max(display.sound_delay_ms - SOUND_DELAY_STEP_MS, 0),
+            "delay_more": min(display.sound_delay_ms + SOUND_DELAY_STEP_MS, MAX_SOUND_DELAY_MS),
         },
         status=status,
     )
@@ -150,6 +162,25 @@ def display_sound(request: HttpRequest) -> HttpResponse:
     if form.is_valid():
         set_sound(display, form.on())
     return redirect(reverse("boards:manage") + "#sound")
+
+
+@require_POST
+@login_required
+def display_sound_delay(request: HttpRequest) -> HttpResponse:
+    """Set how long the display holds its flaps back for the sound."""
+    display = display_for(signed_in_user(request))
+    form = SoundDelayForm(request.POST)
+    if form.is_valid():
+        set_sound_delay(display, form.cleaned_data["sound_delay_ms"])
+    return redirect(reverse("boards:manage") + "#sound-timing")
+
+
+@require_POST
+@login_required
+def display_replay(request: HttpRequest) -> HttpResponse:
+    """Have the display flip its board again, without changing the message."""
+    replay(display_for(signed_in_user(request)))
+    return redirect(reverse("boards:manage") + "#replay")
 
 
 @require_POST

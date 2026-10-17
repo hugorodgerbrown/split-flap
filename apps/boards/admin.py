@@ -18,7 +18,7 @@ class BoardInline(admin.TabularInline):
 class DisplayAdmin(admin.ModelAdmin):
     """Displays, oldest first, with their boards."""
 
-    list_display = ("to_string", "owner", "sound", "uuid", "created_at")
+    list_display = ("to_string", "owner", "sound", "sound_delay_ms", "uuid", "created_at")
     list_select_related = ("owner",)
     readonly_fields = ("uuid",)
     inlines = [BoardInline]

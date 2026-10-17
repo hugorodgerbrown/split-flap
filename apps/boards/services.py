@@ -7,6 +7,7 @@ import logging
 from django.contrib.auth import get_user_model
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.db import transaction
+from django.db.models import F
 from django.utils import timezone
 
 from apps.boards.layout import COLS, ROWS, rows_needed
@@ -15,6 +16,9 @@ from apps.boards.models import (
     MAX_BOARDS,
     MAX_MESSAGE_LENGTH,
     MAX_NAME_LENGTH,
+    MAX_SOUND_DELAY_MS,
+    SOUND_DELAY_STEP_MS,
+    SOUND_DELAYS_MS,
     Board,
     Display,
 )
@@ -128,6 +132,30 @@ def set_sound(display: Display, on: bool) -> Display:
     """Turn ``display``'s flap sound on or off; the TV follows at its next poll."""
     display.sound = on
     display.save(update_fields=["sound", "updated_at"])
+    return display
+
+
+def set_sound_delay(display: Display, delay_ms: int) -> Display:
+    """Hold ``display``'s flaps back by ``delay_ms`` so the clack lands with them.
+
+    Raises:
+        ValueError: ``delay_ms`` isn't a step of the Sound timing setting.
+    """
+    if delay_ms not in SOUND_DELAYS_MS:
+        raise ValueError(
+            f"Sound timing is a step of {SOUND_DELAY_STEP_MS} ms up to {MAX_SOUND_DELAY_MS} ms."
+        )
+    display.sound_delay_ms = delay_ms
+    display.save(update_fields=["sound_delay_ms", "updated_at"])
+    return display
+
+
+def replay(display: Display) -> Display:
+    """Have ``display``'s TV flip its board again at its next poll."""
+    Display.objects.filter(pk=display.pk).update(
+        replays=F("replays") + 1, updated_at=timezone.now()
+    )
+    display.refresh_from_db(fields=["replays", "updated_at"])
     return display
 
 
