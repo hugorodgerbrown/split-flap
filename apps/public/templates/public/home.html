@@ -1,10 +1,10 @@
 {% extends "public_base.html" %}
 {% load static %}
 {# The front page, in the shape every Titan app shares (DESIGN.md, "The front page"). The board in the hero is the real one (static/css/board.css), drawn with demo boards by apps/public/board.py. #}
-{% block title %}{{ pwa.name }}: turn your TV into a split-flap display{% endblock %}
-{% block description %}Type a message from your phone, or let Claude post the news, the weather and your trains. Your TV flips, tile by tile, to show it.{% endblock %}
-{% block share_title %}Turn your TV into a split-flap display{% endblock %}
-{% block share_description %}Type a message from your phone, or let Claude post the news, the weather and your trains. Your TV flips, tile by tile, to show it.{% endblock %}
+{% block title %}{{ pwa.name }}: a split-flap display for any screen{% endblock %}
+{% block description %}Type a message from your phone, or let Claude post the news, the weather and your trains. The board flips, tile by tile, to show it.{% endblock %}
+{% block share_title %}A split-flap display for any screen{% endblock %}
+{% block share_description %}Type a message from your phone, or let Claude post the news, the weather and your trains. The board flips, tile by tile, to show it.{% endblock %}
 {% block extra_css %}<link rel="stylesheet" href="{% static 'css/board.css' %}">{% endblock %}
 {% block extra_js %}
   <script src="{% static 'js/front_board.js' %}" defer></script>
@@ -14,8 +14,8 @@
   {# 2 and 3. Proposition, and the product, live: the board itself, flipping through demo boards. #}
   <section class="hero hero--dark">
     <div class="hero__body stack">
-      <h1>Turn your TV into a split-flap display</h1>
-      <p class="hero__lead">Type a message from your phone, or let Claude post the news, the weather and your trains. Your TV flips, tile by tile, to show it.</p>
+      <h1>A split-flap display for any screen</h1>
+      <p class="hero__lead">Type a message from your phone, or let Claude post the news, the weather and your trains. The board flips, tile by tile, to show it.</p>
       {% if user.is_authenticated %}
         <a class="button button--block button--accent" href="{% url 'boards:manage' %}">Open the app</a>
       {% else %}
@@ -47,8 +47,8 @@
     </li>
     <li class="tile">
       <svg class="tile__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v12H3zM8 21h8M12 17v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg>
-      <p class="tile__title">Open it on the TV</p>
-      <p class="meta">Any TV with a web browser. The board fills the screen and keeps itself up to date.</p>
+      <p class="tile__title">Open it on a screen</p>
+      <p class="meta">A spare monitor, an old tablet or a laptop. The board fills the screen and keeps itself up to date.</p>
     </li>
     <li class="tile">
       <svg class="tile__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4V5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
