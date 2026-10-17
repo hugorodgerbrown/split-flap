@@ -8,7 +8,11 @@ beforeAll(async () => {
   vi.stubGlobal('matchMedia', () => ({ matches: false }));
   // jsdom has no Web Animations; the flaps' timing runs on timers anyway.
   Element.prototype.animate = vi.fn();
+  // The flap sound (static/js/flap_sound.js), off until the toggle is tapped.
+  let on = false;
+  vi.stubGlobal('FlapSound', { clack: vi.fn(), toggle: vi.fn(() => (on = !on)) });
   document.body.innerHTML = `
+    <button type="button" aria-pressed="false" data-sound-toggle hidden>Sound</button>
     <div class="board" role="img" aria-label="Hi" data-front-board
          data-frames='[["H","I","{r}"],["Y","O","{g}"]]' data-names='["Morning","Weather"]' data-labels='["Hi","Yo"]'>
       <div class="grid">${cell('H')}${cell('I')}${cell('')}</div>
@@ -35,6 +39,17 @@ describe('front board launch', () => {
     await vi.advanceTimersByTimeAsync(5000);
     expect(tops()).toEqual(['face|H', 'face|I', 'face colour t-r|']);
     expect(Element.prototype.animate).toHaveBeenCalled();
+    expect(window.FlapSound.clack).toHaveBeenCalled();
+  });
+
+  it('shows the sound toggle, and turns the sound on and off', () => {
+    const toggle = document.querySelector('[data-sound-toggle]');
+    expect(toggle.hidden).toBe(false);
+    toggle.click();
+    expect(toggle.getAttribute('aria-pressed')).toBe('true');
+    toggle.click();
+    expect(toggle.getAttribute('aria-pressed')).toBe('false');
+    expect(window.FlapSound.toggle).toHaveBeenCalledTimes(2);
   });
 
   it('leaves every face of a landed tile showing it, so no old face peeps out', () => {
