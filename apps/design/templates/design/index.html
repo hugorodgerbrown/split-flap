@@ -9,6 +9,19 @@
     <p class="meta">Tokens read from static/css/app.css, and every component in each state. The rules are in DESIGN.md.</p>
   </header>
 
+  <section class="card stack" aria-labelledby="ds-brand">
+    <h2 id="ds-brand">Name and icons</h2>
+    <p class="meta">The wordmark is an R on one of the board's tiles beside the name, and the icons are the tile alone. bin/shoot-icons draws them all.</p>
+    <header class="app-header">
+      <a class="app-header__name" href="#ds-brand"><img class="app-header__mark" src="{% static 'img/wordmark.png' %}" alt="{{ pwa.name }}" width="83" height="28"></a>
+    </header>
+    <p>
+      <img src="{% static 'icons/icon-192.png' %}" alt="The app icon" width="96" height="96">
+      <img src="{% static 'icons/favicon-32.png' %}" alt="The favicon" width="32" height="32">
+      <img src="{% static 'icons/favicon-16.png' %}" alt="The favicon at 16 pixels" width="16" height="16">
+    </p>
+  </section>
+
   <section class="card stack" aria-labelledby="ds-colour">
     <h2 id="ds-colour">Colour</h2>
     <ul class="ds-grid">

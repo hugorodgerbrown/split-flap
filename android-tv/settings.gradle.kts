@@ -1,4 +1,4 @@
-// The Split-Flap app for Android TV / Google TV: a native shell around the display page.
+// The Riffle app for Android TV / Google TV: a native shell around the display page.
 pluginManagement {
     repositories {
         google()

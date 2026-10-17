@@ -96,7 +96,11 @@ def test_home_shows_the_board_itself(client: Client) -> None:
     assert content.count('<div class="cell">') == COLS * ROWS
     assert '<span class="face colour t-r">' in content
     assert ">Morning<" in content
-    assert 'aria-label="Good morning bins go out tonight posted by claude 07:00"' in content
+    assert (
+        'aria-label="Good morning it&#x27;s a beautiful day sun 18c train 07:52 by riffle"'
+        in content
+    )
+    assert 'img/pictograms.svg#sun"' in content
 
 
 def test_home_shows_the_connector(client: Client, with_mcp: str) -> None:

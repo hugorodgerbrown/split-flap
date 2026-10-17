@@ -1,12 +1,12 @@
 # The Android TV app
 
-`android-tv/` is Split-Flap for Android TV and Google TV: a home-screen
+`android-tv/` is Riffle for Android TV and Google TV: a home-screen
 tile that opens straight onto your display's board. Why it is built this
 way: [docs/decisions/the-tv-app-is-a-shell-around-the-board.md](decisions/the-tv-app-is-a-shell-around-the-board.md).
 
 ## Using it
 
-1. Open **Split-Flap** on the TV. It shows a code like `K7Q-4MD` and a QR code.
+1. Open **Riffle** on the TV. It shows a code like `K7Q-4MD` and a QR code.
 2. On your phone, scan the QR code, or go to `/app/display/pair/` and type the code.
 3. The TV shows your board within a few seconds, and opens straight to it from then on.
 

@@ -107,7 +107,8 @@ a { color: var(--action); }
   font-weight: 600;
   text-decoration: none;
 }
-.app-header__icon { border-radius: var(--radius-icon); }
+/* The wordmark: the R tile and the name, drawn by bin/shoot-icons. */
+.app-header__mark { display: block; }
 .app-header form { margin: 0; }
 .app-header .button--quiet { color: inherit; }
 .app-header__link { color: inherit; font-weight: 600; text-decoration: none; }

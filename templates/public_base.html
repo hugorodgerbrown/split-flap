@@ -21,7 +21,7 @@
   </head>
   <body>
     <header class="app-header">
-      <a class="app-header__name" href="{% url 'public:home' %}"><img class="app-header__icon" src="{% static 'icons/icon-192.png' %}" alt="" width="28" height="28">{{ pwa.name }}</a>
+      <a class="app-header__name" href="{% url 'public:home' %}"><img class="app-header__mark" src="{% static 'img/wordmark.png' %}" alt="{{ pwa.name }}" width="83" height="28"></a>
       {% if user.is_authenticated %}
         <a class="app-header__link" href="{% url 'boards:manage' %}">Open the app</a>
       {% else %}

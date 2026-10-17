@@ -12,7 +12,7 @@
  * a sound that's on shows "Tap for sound".
  */
 (() => {
-  const { COLS, ROWS, ICONS, DRUM, DRUM_POS, parse, message } = self.FlapText;
+  const { COLS, ROWS, ICON_MASKS: ICON_URL, DRUM, DRUM_POS, parse, message } = self.FlapText;
   const CYCLE_MS = 30000;
   // Flip speed presets: each multiplies flap timing and the cascade delay.
   const SPEEDS = [{ name: 'Slow', k: 1.8 }, { name: 'Normal', k: 1 }, { name: 'Fast', k: 0.5 }];
@@ -20,9 +20,6 @@
   try { const v = localStorage.getItem('splitflap.speed'); if (v !== null && SPEEDS[+v]) speed = +v; } catch (e) {}
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // Each pictogram as a mask, painted in flap ink by board.css.
-  const ICON_URL = Object.fromEntries(Object.entries(ICONS).map(([k, svg]) => [k,
-    `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">${svg}</svg>`)}")`]));
 
   // ---- Boards: whatever the server says each one shows, filled by poll() ----
   const root = document.getElementById('board');

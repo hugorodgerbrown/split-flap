@@ -1,7 +1,7 @@
 """Who may connect an MCP client to this project (MCP_AUTH["CAN_CONNECT"]).
 
 An MCP client acts with the user's full access, so widening this is a
-product decision. Split-Flap uses every_account: connecting Claude is how
+product decision. Riffle uses every_account: connecting Claude is how
 a person's Routines post to their boards
 (docs/decisions/every-account-may-connect-claude.md). The rule runs on the
 consent page and on every call, so turning an account off cuts its

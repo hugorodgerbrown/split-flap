@@ -6,7 +6,8 @@
  * first board in, as the display does when it loads, then every few seconds
  * turns each tile through the drum to the next board's symbol, flap by flap
  * (as static/js/splitflap.js does). Reduced motion shows each board without
- * flipping. The sound toggle under the board turns on the flap sound
+ * flipping. It reads the drum and the pictograms from static/js/flaptext.js.
+ * The sound toggle under the board turns on the flap sound
  * (static/js/flap_sound.js); it stays hidden without motion, as there's
  * nothing to hear.
  */
@@ -22,15 +23,15 @@
   const START_MS = 400;
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // The drum's order, as splitflap.js turns through it (pictograms aside).
-  const DRUM = [' ', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ', ...'1234567890', ...'!@#$()-+&=;:\'"%,./?°',
-    '{r}', '{o}', '{y}', '{g}', '{b}', '{v}', '{w}'];
-  const POS = new Map(DRUM.map((s, i) => [s, i]));
+  // The drum's order and the pictograms, as splitflap.js turns through them.
+  const { DRUM, DRUM_POS: POS, ICON_MASKS } = self.FlapText;
 
   function setFace(face, sym) {
-    const tile = sym.length === 3;
-    face.className = tile ? `face colour t-${sym[1]}` : 'face';
-    face.textContent = tile ? '' : sym;
+    face.textContent = '';
+    face.style.removeProperty('--icon');
+    if (sym[0] === '{') face.className = `face colour t-${sym[1]}`;
+    else if (sym.length > 1) { face.className = 'face icon'; face.style.setProperty('--icon', ICON_MASKS[sym.slice(1, -1)]); }
+    else { face.className = 'face'; face.textContent = sym; }
   }
   function leaf(cls, sym) {
     const el = document.createElement('div');

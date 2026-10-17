@@ -1,4 +1,4 @@
-# Onboarding tour — Split-Flap
+# Onboarding tour — Riffle
 
 The script for the first-run tour. Agree it before building it; the rules
 it follows are in

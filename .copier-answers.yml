@@ -4,10 +4,10 @@ _src_path: gh:hugorodgerbrown/django-titan-template
 author_email: hugo@rodger-brown.com
 author_name: Hugo Rodger-Brown
 copyright_holder: Ultraniche
-description: A split-flap board for your TV that Claude can post to
+description: A split-flap display for any screen that Claude can post to
 include_mcp: true
 mcp_can_connect: apps.mcp.policy.staff_only
-project_name: Split-Flap
+project_name: Riffle
 project_slug: split-flap
 render_region: frankfurt
 theme_colour: '#1C1B1A'
