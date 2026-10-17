@@ -19,6 +19,16 @@ def test_display_for_makes_one_display_with_every_board(user: Any) -> None:
     assert Display.objects.count() == 1
 
 
+def test_display_for_keeps_the_secret_out_of_the_log(
+    user: Any, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Making a display logs it without its uuid, the TV's secret."""
+    with caplog.at_level("INFO", logger="apps.boards.services"):
+        display = display_for(user)
+    assert "Made display" in caplog.text
+    assert str(display.uuid) not in caplog.text
+
+
 def test_for_user_filters_by_owner() -> None:
     """for_user() returns only that user's displays and boards."""
     mine = BoardFactory.create()
@@ -40,10 +50,14 @@ def test_post_message_sets_and_clears(user: Any) -> None:
 
 @pytest.mark.parametrize(
     ("text", "kind"),
-    [("hello", "sports"), ("x" * (MAX_MESSAGE_LENGTH + 1), BoardKind.CUSTOM)],
+    [
+        ("hello", "sports"),
+        ("x" * (MAX_MESSAGE_LENGTH + 1), BoardKind.CUSTOM),
+        ("\n".join(["row"] * 7), BoardKind.CUSTOM),
+    ],
 )
 def test_post_message_refuses_bad_input(user: Any, text: str, kind: str) -> None:
-    """An unknown board or an over-long message is a BoardError, not a save."""
+    """An unknown board or a message that won't fit is a BoardError, not a save."""
     with pytest.raises(BoardError):
         post_message(display_for(user), text, kind)
 

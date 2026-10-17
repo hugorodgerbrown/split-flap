@@ -3,6 +3,7 @@
 from django import forms
 
 from apps.boards.models import MAX_MESSAGE_LENGTH, BoardKind
+from apps.boards.services import BoardError, check_fits
 
 
 class PostMessageForm(forms.Form):
@@ -15,3 +16,12 @@ class PostMessageForm(forms.Form):
         strip=True,
         widget=forms.Textarea(attrs={"rows": 3, "aria-describedby": "text-help"}),
     )
+
+    def clean_text(self) -> str:
+        """Refuse a message that would lose its end on the board."""
+        text: str = self.cleaned_data["text"]
+        try:
+            check_fits(text)
+        except BoardError as error:
+            raise forms.ValidationError(str(error)) from error
+        return text

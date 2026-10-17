@@ -74,3 +74,12 @@ def test_post_refuses_an_unknown_board(signed_in: Client) -> None:
     """An invalid form redraws the page with its errors."""
     response = signed_in.post(reverse("boards:post"), {"kind": "sports", "text": "Goal"})
     assert response.status_code == 400
+
+
+def test_post_refuses_a_message_that_wont_fit(signed_in: Client, user: Any) -> None:
+    """A message longer than six rows is refused with the reason, not cut off."""
+    text = "\n".join(["row"] * 7)
+    response = signed_in.post(reverse("boards:post"), {"kind": "custom", "text": text})
+    assert response.status_code == 400
+    assert "needs 7 rows" in response.content.decode()
+    assert display_for(user).boards.get(kind="custom").message == ""

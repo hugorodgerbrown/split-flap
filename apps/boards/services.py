@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import logging
 
+from django.contrib.auth import get_user_model
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.db import transaction
 from django.utils import timezone
 
+from apps.boards.layout import COLS, ROWS, rows_needed
 from apps.boards.models import MAX_MESSAGE_LENGTH, Board, BoardKind, Display
 
 logger = logging.getLogger(__name__)
@@ -23,13 +25,32 @@ def display_for(user: AbstractBaseUser) -> Display:
     if display:
         return display
     with transaction.atomic():
-        display = Display.objects.create(owner_id=user.pk)
-        Board.objects.bulk_create(
-            Board(display=display, kind=kind, position=position)
-            for position, kind in enumerate(BoardKind.values)
-        )
-    logger.info("Made display %s", display.uuid)
+        # Lock the owner so two first visits at once make one display, not two.
+        get_user_model().objects.select_for_update().filter(pk=user.pk).first()
+        display = Display.objects.for_user(user).first()
+        if display is None:
+            display = Display.objects.create(owner_id=user.pk)
+            Board.objects.bulk_create(
+                Board(display=display, kind=kind, position=position)
+                for position, kind in enumerate(BoardKind.values)
+            )
+            # The uuid is the TV's secret, so it stays out of the logs.
+            logger.info("Made display %s", display.pk)
     return Display.objects.prefetch_related("boards").get(pk=display.pk)
+
+
+def check_fits(text: str) -> None:
+    """Raise BoardError if ``text`` won't fit on the board once it's wrapped."""
+    if len(text) > MAX_MESSAGE_LENGTH:
+        raise BoardError(
+            f"That message is too long: keep it under {MAX_MESSAGE_LENGTH} characters."
+        )
+    rows = rows_needed(text)
+    if rows > ROWS:
+        raise BoardError(
+            f"That message needs {rows} rows but the board has {ROWS} rows of {COLS} tiles: "
+            "shorten it so nothing is cut off."
+        )
 
 
 def post_message(display: Display, text: str, kind: str = BoardKind.CUSTOM) -> Board:
@@ -37,10 +58,7 @@ def post_message(display: Display, text: str, kind: str = BoardKind.CUSTOM) -> B
     if kind not in BoardKind.values:
         raise BoardError(f"There's no {kind!r} board. Use one of: {', '.join(BoardKind.values)}.")
     text = text.strip()
-    if len(text) > MAX_MESSAGE_LENGTH:
-        raise BoardError(
-            f"That message is too long: keep it under {MAX_MESSAGE_LENGTH} characters."
-        )
+    check_fits(text)
     board = display.boards.get(kind=kind)
     board.message = text
     board.posted_at = timezone.now() if text else None
