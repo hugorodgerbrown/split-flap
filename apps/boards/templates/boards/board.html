@@ -36,7 +36,9 @@
         <div class="palette" data-palette hidden>
           <span class="field__label" id="palette-h">Colours and pictograms</span>
           <div class="palette__keys" role="group" aria-labelledby="palette-h">
-            {% for key in palette %}<button class="palette__key" type="button" data-insert="{{ key.code }}" aria-label="{{ key.label }}" title="{{ key.code }}">{% include "boards/_flap.html" with tile=key.tile %}</button>{% endfor %}
+            {% for key in palette %}
+              <button class="palette__key" type="button" data-insert="{{ key.code }}" aria-label="{{ key.label }}" title="{{ key.code }}">{% include "boards/_flap.html" with tile=key.tile %}</button>
+            {% endfor %}
           </div>
         </div>
       </div>
