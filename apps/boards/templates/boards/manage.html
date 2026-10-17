@@ -17,20 +17,10 @@
     <form class="stack" method="post" action="{% url 'boards:post' %}">
       {% csrf_token %}
       {{ form.non_field_errors }}
-      <label class="field">
-        <span class="field__label">Board</span>
-        <select name="kind">
-          {% for value, label in form.fields.kind.choices %}
-            <option value="{{ value }}"{% if value == form.kind.value %} selected{% endif %}>{{ label }}</option>
-          {% endfor %}
-        </select>
-      </label>
-      <label class="field">
-        <span class="field__label">Message</span>
-        <textarea name="text" rows="3" maxlength="{{ form.fields.text.max_length }}">{{ form.text.value|default_if_none:'' }}</textarea>
-      </label>
+      <label class="field"><span class="field__label">Board</span>{{ form.kind }}</label>
+      <label class="field"><span class="field__label">Message</span>{{ form.text }}</label>
       {{ form.text.errors }}
-      <p class="meta">Up to six rows of 22 tiles. Emoji like ☀ 🌧 🚆 ❤ show as pictograms, and {r} {o} {y} {g} {b} {v} {w} make colour tiles. Leave it empty to put the board's own content back.</p>
+      <p class="meta" id="text-help">Up to six rows of 22 tiles. Emoji like ☀ 🌧 🚆 ❤ show as pictograms, and {r} {o} {y} {g} {b} {v} {w} make colour tiles. Leave it empty to put the board's own content back.</p>
       <button class="button" type="submit">Show on the board</button>
     </form>
   </section>
