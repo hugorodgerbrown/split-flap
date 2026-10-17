@@ -138,13 +138,12 @@
     let shown = status.dataset.postedAt || null;  // posted_at as the server drew it
     const form = document.querySelector('form[data-board-editor][data-preview="' + status.dataset.preview + '"]');
 
-    // Show a new post; an editor on this board takes it too, unless it holds a draft.
+    // Show a new post; an editor on this board takes it too, but keeps a draft in the box.
     function follow(text) {
       if (!form) { draw(board, name, text || name); return; }
       const textarea = form.querySelector('textarea');
-      if (textarea.value.trim() !== form.dataset.saved.trim()) return;
+      if (textarea.value.trim() === form.dataset.saved.trim()) textarea.value = text;
       form.dataset.saved = text;
-      textarea.value = text;
       textarea.dispatchEvent(new Event('input', { bubbles: true }));
     }
 

@@ -184,7 +184,7 @@ describe('live', () => {
       expect(form.querySelector('[data-save]').disabled).toBe(true);
     });
 
-    it('leaves a draft alone', async () => {
+    it('leaves a draft alone, but measures it against the new post', async () => {
       textarea.value = 'Mine';
       textarea.dispatchEvent(new Event('input', { bubbles: true }));
       BoardPreview.live(document.querySelector('[data-live-board]'));
@@ -192,6 +192,9 @@ describe('live', () => {
       expect(textarea.value).toBe('Mine');
       expect(shown()).toBe('MINE');
       expect(document.querySelector('[data-posted] time')).not.toBeNull();
+      textarea.value = 'Old';  // back to what the box first held, which is no longer on the display
+      textarea.dispatchEvent(new Event('input', { bubbles: true }));
+      expect(form.querySelector('[data-save]').disabled).toBe(false);
     });
   });
 
