@@ -27,7 +27,7 @@
 
   function setFace(face, sym) {
     const tile = sym.length === 3;
-    face.className = tile ? `face tile t-${sym[1]}` : 'face';
+    face.className = tile ? `face colour t-${sym[1]}` : 'face';
     face.textContent = tile ? '' : sym;
   }
   function leaf(cls, sym) {

@@ -33,7 +33,7 @@ describe('front board launch', () => {
 
   it('flips the first board in, flap by flap', async () => {
     await vi.advanceTimersByTimeAsync(5000);
-    expect(tops()).toEqual(['face|H', 'face|I', 'face tile t-r|']);
+    expect(tops()).toEqual(['face|H', 'face|I', 'face colour t-r|']);
     expect(Element.prototype.animate).toHaveBeenCalled();
   });
 

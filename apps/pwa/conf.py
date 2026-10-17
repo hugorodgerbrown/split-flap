@@ -38,6 +38,11 @@ PRECACHE_STATIC = [
     "js/pwa.js",
     "js/notes.js",
     "js/copy.js",
+    "js/flaptext.js",
+    "js/board_preview.js",
+    "css/board.css",
+    "img/pictograms.svg",
+    "fonts/barlow-semi-condensed-600-latin.woff2",
     "icons/icon-192.png",
 ]
 

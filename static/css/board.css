@@ -4,8 +4,8 @@
  * Kept apart from app.css on purpose: the board draws a physical object
  * (flaps, tiles, a frame), not the app's interface, so its palette and
  * measurements are its own. docs/decisions/the-tv-board-has-its-own-stylesheet.md
- * The TV's page around it is tv.css; the front page shows it too, as
- * .board--fluid.
+ * The TV's page around it is tv.css; the front page and the app's display
+ * and board pages show it too, as .board--fluid.
  */
 /* Barlow and Barlow Semi Condensed, self-hosted (SIL OFL, static/fonts/OFL.txt). */
 @font-face { font-family: "Barlow Semi Condensed"; font-weight: 600; font-display: swap; src: url("../fonts/barlow-semi-condensed-600-latin.woff2") format("woff2"); }
@@ -99,19 +99,21 @@
 }
 .top .face { top: 0; }
 .bottom .face { bottom: 0; }
-.face.tile { inset: 0; height: auto; }
-.top .face.tile { bottom: 0; }
-.face.t-r { background: var(--tile-r); } .face.t-o { background: var(--tile-o); }
-.face.t-y { background: var(--tile-y); } .face.t-g { background: var(--tile-g); }
-.face.t-b { background: var(--tile-b); } .face.t-v { background: var(--tile-v); }
-.face.t-w { background: var(--tile-w); }
+.face.colour { inset: 0; height: auto; }
+.top .face.colour { bottom: 0; }
+.t-r { background: var(--tile-r); } .t-o { background: var(--tile-o); }
+.t-y { background: var(--tile-y); } .t-g { background: var(--tile-g); }
+.t-b { background: var(--tile-b); } .t-v { background: var(--tile-v); }
+.t-w { background: var(--tile-w); }
 .face.icon {
   background: var(--ink);
   -webkit-mask: var(--icon) center / 74% auto no-repeat;
   mask: var(--icon) center / 74% auto no-repeat;
 }
-.top .face.tile { box-shadow: inset 0 1px 0 rgba(255,255,255,.22); }
-.bottom .face.tile { filter: brightness(0.9); }
+/* A pictogram the server draws (img/pictograms.svg), split by the halves like a character. */
+.face__icon { display: block; width: 74%; height: 100%; margin: 0 auto; }
+.top .face.colour { box-shadow: inset 0 1px 0 rgba(255,255,255,.22); }
+.bottom .face.colour { filter: brightness(0.9); }
 /* The split between leaves, with the axle notches at each side */
 .cell::after {
   content: ""; position: absolute; left: 0; right: 0; top: 50%; z-index: 3;
@@ -137,3 +139,15 @@
   --fs: calc(var(--ch) * 0.66);
   --r: max(1px, calc(var(--cw) * 0.07));
 }
+
+/* What the engraving says on the app's pages: "Draft" or "On the display". */
+.engrave__tag { color: var(--tile-y); }
+
+/* One tile on its own, as a palette key on the board page shows it. */
+.flap {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 34px; border-radius: 4px;
+  color: var(--ink);
+}
+.flap:not(.colour) { background: linear-gradient(180deg, var(--flap-top-a) 0 50%, var(--flap-bot-a) 50% 100%); }
+.flap svg { width: 20px; height: 20px; }

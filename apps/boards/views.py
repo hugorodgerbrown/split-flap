@@ -1,8 +1,9 @@
-"""Views for the display: the TV's board and state, and the signed-in page.
+"""Views for the display: the TV's board and state, and the signed-in pages.
 
 The TV's two views need no sign-in: the display's uuid in the address is
 the secret, so anyone with the link can watch the board but nobody can
-change it from there.
+change it from there. The signed-in pages show the display and its boards,
+and every change to them is a plain form post, so they work without script.
 """
 
 from __future__ import annotations
@@ -12,16 +13,53 @@ from uuid import UUID
 from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponse, HttpResponseNotModified, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.templatetags.static import static
 from django.urls import reverse
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
-from apps.boards.forms import PostMessageForm
-from apps.boards.models import Display
-from apps.boards.services import display_for, post_message
+from apps.boards.forms import BoardNameForm, MessageForm, MoveForm
+from apps.boards.layout import COLOURS, PICTOGRAMS, Tile, board_tiles
+from apps.boards.models import MAX_BOARDS, MAX_MESSAGE_LENGTH, Board, Display
+from apps.boards.services import (
+    BoardError,
+    add_board,
+    delete_board,
+    display_for,
+    move_board,
+    post_message,
+    rename_board,
+)
 from apps.core.decorators import signed_in_user
+from apps.public.connector import mcp_url
 
 # How often the TV asks for new content, in seconds.
 POLL_SECONDS = 5
+
+# The pictograms drawn for the app's pages, one <symbol> each.
+PICTOGRAMS_SVG = "img/pictograms.svg"
+
+# How a pictogram is read out where its name alone wouldn't say.
+PICTOGRAM_LABELS = {
+    "partcloud": "Sun and cloud",
+    "up": "Arrow up",
+    "down": "Arrow down",
+    "left": "Arrow left",
+    "right": "Arrow right",
+}
+
+# The board page's palette: every colour tile, then every pictogram, each
+# with the code it adds to a message and a name to read out.
+PALETTE = [
+    {"code": f"{{{letter}}}", "tile": Tile(colour=letter), "label": f"{name} tile"}
+    for letter, name in COLOURS.items()
+] + [
+    {
+        "code": f":{name}:",
+        "tile": Tile(icon=name),
+        "label": PICTOGRAM_LABELS.get(name, name.capitalize()),
+    }
+    for name in PICTOGRAMS
+]
 
 
 def _display(display_uuid: UUID) -> Display:
@@ -58,18 +96,37 @@ def tv_state(request: HttpRequest, display_uuid: UUID) -> HttpResponse:
     return response
 
 
-def _manage(
-    request: HttpRequest, display: Display, form: PostMessageForm, status: int = 200
-) -> HttpResponse:
-    """Render the signed-in display page."""
+def _board(request: HttpRequest, board_uuid: UUID) -> Board:
+    """Return the signed-in user's board with this uuid, or 404."""
+    boards = Board.objects.for_user(signed_in_user(request)).select_related("display")
+    return get_object_or_404(boards, uuid=board_uuid)
+
+
+def _drawing(board: Board) -> dict[str, object]:
+    """Return what a page needs to draw ``board`` as the TV shows it."""
+    shows = board.message or board.name
+    return {"shows": shows, "tiles": board_tiles(shows), "pictograms": static(PICTOGRAMS_SVG)}
+
+
+def _manage(request: HttpRequest, form: BoardNameForm, status: int = 200) -> HttpResponse:
+    """Render the display page, previewing the board ``?board=`` names (or the first)."""
+    display = form.display
+    boards = list(display.boards.all())
+    preview = next((b for b in boards if str(b.uuid) == request.GET.get("board")), boards[0])
     return render(
         request,
         "boards/manage.html",
         {
             "display": display,
-            "boards": display.boards.all(),
+            "boards": boards,
+            "preview": preview,
+            **_drawing(preview),
             "tv_url": request.build_absolute_uri(reverse("tv:board", args=[display.uuid])),
+            "state_url": reverse("tv:state", args=[display.uuid]),
+            "poll_seconds": POLL_SECONDS,
+            "mcp_url": mcp_url(),
             "form": form,
+            "max_boards": MAX_BOARDS,
         },
         status=status,
     )
@@ -78,18 +135,109 @@ def _manage(
 @require_GET
 @login_required
 def display_manage(request: HttpRequest) -> HttpResponse:
-    """The signed-in page: the TV's link and a form to post to a board."""
+    """The display page: a preview, the display's link, and its boards in order."""
     display = display_for(signed_in_user(request))
-    return _manage(request, display, PostMessageForm(display))
+    return _manage(request, BoardNameForm(display))
 
 
 @require_POST
 @login_required
-def display_post(request: HttpRequest) -> HttpResponse:
-    """Post a message to one of the signed-in user's boards."""
+def board_add(request: HttpRequest) -> HttpResponse:
+    """Add a board to the end of the signed-in user's display."""
     display = display_for(signed_in_user(request))
-    form = PostMessageForm(display, request.POST)
+    form = BoardNameForm(display, request.POST)
+    if form.is_valid():
+        try:
+            board = add_board(display, form.cleaned_data["name"])
+        except BoardError as error:
+            form.add_error("name", str(error))
+        else:
+            return redirect("boards:board", board.uuid)
+    return _manage(request, form, status=400)
+
+
+def _board_page(
+    request: HttpRequest,
+    board: Board,
+    message_form: MessageForm | None = None,
+    name_form: BoardNameForm | None = None,
+    status: int = 200,
+) -> HttpResponse:
+    """Render a board's page, with any form that failed in place of a fresh one."""
+    return render(
+        request,
+        "boards/board.html",
+        {
+            "board": board,
+            **_drawing(board),
+            "message_form": message_form or MessageForm(initial={"text": board.message}),
+            "name_form": name_form or BoardNameForm(board.display, initial={"name": board.name}),
+            "palette": PALETTE,
+            "max_message_length": MAX_MESSAGE_LENGTH,
+        },
+        status=status,
+    )
+
+
+@require_GET
+@login_required
+def board_detail(request: HttpRequest, board_uuid: UUID) -> HttpResponse:
+    """A board's page: what it shows, a box to change it, and its settings."""
+    return _board_page(request, _board(request, board_uuid))
+
+
+@require_POST
+@login_required
+def board_message(request: HttpRequest, board_uuid: UUID) -> HttpResponse:
+    """Put a new message on a board, or clear it."""
+    board = _board(request, board_uuid)
+    form = MessageForm({"text": ""} if "clear" in request.POST else request.POST)
     if not form.is_valid():
-        return _manage(request, display, form, status=400)
-    post_message(display, form.cleaned_data["text"], form.cleaned_data["board"])
-    return redirect("boards:manage")
+        return _board_page(request, board, message_form=form, status=400)
+    post_message(board.display, form.cleaned_data["text"], board.name)
+    return redirect("boards:board", board.uuid)
+
+
+@require_POST
+@login_required
+def board_rename(request: HttpRequest, board_uuid: UUID) -> HttpResponse:
+    """Give a board a new name."""
+    board = _board(request, board_uuid)
+    form = BoardNameForm(board.display, request.POST, board=board)
+    if not form.is_valid():
+        return _board_page(request, board, name_form=form, status=400)
+    rename_board(board, form.cleaned_data["name"])
+    return redirect("boards:board", board.uuid)
+
+
+@require_POST
+@login_required
+def board_move(request: HttpRequest, board_uuid: UUID) -> HttpResponse:
+    """Move a board up or down the display's order."""
+    board = _board(request, board_uuid)
+    form = MoveForm(request.POST)
+    if form.is_valid():
+        move_board(board, form.step())
+    return redirect(reverse("boards:manage") + "#boards")
+
+
+@require_http_methods(["GET", "POST"])
+@login_required
+def board_delete(request: HttpRequest, board_uuid: UUID) -> HttpResponse:
+    """Ask before deleting a board, then delete it."""
+    board = _board(request, board_uuid)
+    error = ""
+    if request.method == "POST":
+        try:
+            delete_board(board)
+        except BoardError as refused:
+            error = str(refused)
+        else:
+            return redirect("boards:manage")
+    is_last = not Board.objects.filter(display_id=board.display_id).exclude(pk=board.pk).exists()
+    return render(
+        request,
+        "boards/delete.html",
+        {"board": board, "is_last": is_last, "error": error},
+        status=400 if error else 200,
+    )

@@ -1,0 +1,1 @@
+{# One palette key's tile: a colour, or a pictogram on a flap (css/board.css). #}<span class="flap{% if tile.colour %} colour t-{{ tile.colour }}{% endif %}">{% if tile.icon %}<svg aria-hidden="true"><use href="{{ pictograms }}#{{ tile.icon }}"></use></svg>{% endif %}</span>

@@ -28,7 +28,7 @@
         <div class="board board--fluid" role="img" aria-label="{{ board.label }}" data-front-board
              data-frames="{{ board.frames_json }}" data-names="{{ board.names_json }}" data-labels="{{ board.labels_json }}">
           <div class="grid">
-            {% for cell in board.cells %}<div class="cell"><div class="half top"><span class="face{% if cell.tile %} tile t-{{ cell.tile }}{% endif %}">{{ cell.char }}</span></div><div class="half bottom"><span class="face{% if cell.tile %} tile t-{{ cell.tile }}{% endif %}">{{ cell.char }}</span></div></div>{% endfor %}
+            {% for cell in board.cells %}<div class="cell"><div class="half top"><span class="face{% if cell.tile %} colour t-{{ cell.tile }}{% endif %}">{{ cell.char }}</span></div><div class="half bottom"><span class="face{% if cell.tile %} colour t-{{ cell.tile }}{% endif %}">{{ cell.char }}</span></div></div>{% endfor %}
           </div>
           <div class="engrave"><span data-board-name>{{ board.name }}</span><span class="leds">{% for name in board.names %}<span class="led{% if forloop.first %} on{% endif %}"></span>{% endfor %}</span></div>
         </div>

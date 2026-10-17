@@ -6,8 +6,24 @@ import pytest
 from django.db import IntegrityError, connection
 from django.db.migrations.executor import MigrationExecutor
 
-from apps.boards.models import FIRST_BOARD_NAME, MAX_MESSAGE_LENGTH, Board, Display
-from apps.boards.services import BoardError, display_for, find_board, post_message
+from apps.boards.models import (
+    FIRST_BOARD_NAME,
+    MAX_MESSAGE_LENGTH,
+    MAX_NAME_LENGTH,
+    Board,
+    Display,
+)
+from apps.boards.services import (
+    BoardError,
+    add_board,
+    check_name,
+    delete_board,
+    display_for,
+    find_board,
+    move_board,
+    post_message,
+    rename_board,
+)
 from tests.factories import BoardFactory, DisplayFactory, UserFactory
 
 pytestmark = pytest.mark.django_db
@@ -94,6 +110,79 @@ def test_post_message_refuses_bad_input(user: Any, text: str, name: str | None) 
     with pytest.raises(BoardError):
         post_message(display_for(user), text, name)
     assert display_for(user).boards.get().message == ""
+
+
+@pytest.mark.parametrize(
+    ("name", "error"),
+    [
+        ("   ", "Give the board a name"),
+        ("x" * (MAX_NAME_LENGTH + 1), "under 40 characters"),
+        ("HOME", "already a board called HOME"),
+    ],
+)
+def test_check_name_refuses(user: Any, name: str, error: str) -> None:
+    """A name is needed, short enough, and not another board's."""
+    with pytest.raises(BoardError, match=error):
+        check_name(display_for(user), name)
+
+
+def test_check_name_tidies_spaces_and_lets_a_board_keep_its_name(user: Any) -> None:
+    """Runs of spaces become one, and a board being renamed doesn't clash with itself."""
+    display = display_for(user)
+    assert check_name(display, "  Morning   news ") == "Morning news"
+    assert check_name(display, "home", display.boards.get()) == "home"
+
+
+def test_add_board_goes_on_the_end(user: Any) -> None:
+    """A new board takes the next position, even after gaps."""
+    display = display_for(user)
+    BoardFactory.create(display=display, name="Far", position=7)
+    assert add_board(display, "News").position == 8
+
+
+def test_rename_board(user: Any) -> None:
+    """Renaming saves the tidied name."""
+    board = rename_board(display_for(user).boards.get(), " Kitchen ")
+    board.refresh_from_db()
+    assert board.name == "Kitchen"
+
+
+def test_move_board_renumbers_ties(user: Any) -> None:
+    """Boards sharing a position are numbered afresh, so a move always moves."""
+    display = display_for(user)
+    news = BoardFactory.create(display=display, name="News", position=0)
+    move_board(news, -1)
+    assert [(b.name, b.position) for b in Board.objects.filter(display=display)] == [
+        ("News", 0),
+        ("Home", 1),
+    ]
+
+
+def test_delete_board_keeps_the_last(user: Any) -> None:
+    """The last board stays; any other goes."""
+    display = display_for(user)
+    news = BoardFactory.create(display=display, name="News", position=1)
+    delete_board(news)
+    with pytest.raises(BoardError, match="at least one board"):
+        delete_board(display.boards.get())
+    assert Board.objects.filter(display=display).count() == 1
+
+
+def test_board_changes_lock_the_display(user: Any, monkeypatch: Any) -> None:
+    """Adding, moving and deleting lock the display, so two at once can't break a limit."""
+    display = display_for(user)
+    locked = []
+    real = Display.objects.select_for_update
+
+    def spy(*args: Any, **kwargs: Any) -> Any:
+        locked.append(True)
+        return real(*args, **kwargs)
+
+    monkeypatch.setattr(Display.objects, "select_for_update", spy)
+    news = add_board(display, "News")
+    move_board(news, -1)
+    delete_board(news)
+    assert len(locked) == 3
 
 
 def test_state_version_changes_with_content(user: Any) -> None:
