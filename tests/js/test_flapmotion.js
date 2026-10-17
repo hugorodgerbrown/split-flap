@@ -124,6 +124,18 @@ describe('Board', () => {
     expect(faces()[5 * COLS]).toBe('B');
   });
 
+  it('schedules a tile afresh after a snap cancels its start', async () => {
+    const board = new Board(grid);
+    TUNING.colMs = 1000;
+    board.show(['', '', '', '', '', ' '.repeat(COLS - 1) + 'A']);
+    board.snap([]);
+    TUNING.colMs = 0;
+    board.show(['', '', '', '', '', ' '.repeat(COLS - 1) + 'B']);
+    await vi.advanceTimersByTimeAsync(TUNING.rowMs * 5 + 500);
+    expect(faces().at(-1)).toBe('B');
+    Object.assign(TUNING, self.FlapMotion.DEFAULTS);
+  });
+
   it('snaps instead of flipping with reduced motion', () => {
     vi.stubGlobal('matchMedia', () => ({ matches: true }));
     const board = new Board(grid);

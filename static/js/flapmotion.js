@@ -103,9 +103,10 @@
       this.target = sym;
       if (this.running || this.cur === sym) return;
       this.running = true;
-      setTimeout(() => this.run(), delay);
+      this.start = setTimeout(() => this.run(), delay);
     }
     async run() {
+      this.start = null;
       while (this.cur !== this.target) {
         if (this.board.still()) { this.snap(this.target); break; }
         await this.flip(nextFlap(this.cur, this.target));
@@ -114,6 +115,8 @@
     }
     snap(sym) {
       this.drawn++;  // drop any flap still waiting to be drawn
+      // Drop a start still waiting, so the next show() schedules it afresh.
+      if (this.start) { clearTimeout(this.start); this.start = null; this.running = false; }
       this.a1?.cancel(); this.a2?.cancel();
       [this.sTop, this.sBot, this.lTop, this.lBot].forEach(h => setFace(h, sym));
       this.cur = sym;
