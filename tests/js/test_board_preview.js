@@ -207,6 +207,33 @@ describe('live', () => {
   });
 });
 
+describe('after htmx swaps in another board', () => {
+  const page = (name) => `${BOARD}
+    <p data-live-board="${name}" data-state-url="/d/x/state/" data-poll-seconds="5" data-preview="preview"><span data-posted></span></p>
+    <form data-board-editor data-preview="preview" data-name="${name}" data-saved="${name} news" data-max-length="400">
+      <textarea name="text">${name} news</textarea>
+      <p><span data-row-count></span><span data-char-count></span></p>
+      <button type="submit" data-save>Save</button>
+    </form>`;
+
+  it('wires up the new board once, and stops polling for the old one', () => {
+    vi.useFakeTimers();
+    const fetch = vi.fn().mockResolvedValue({ status: 304 });
+    vi.stubGlobal('fetch', fetch);
+    const stop = vi.spyOn(globalThis, 'clearInterval');
+    document.body.innerHTML = page('News');
+    document.dispatchEvent(new Event('htmx:afterSettle'));
+    expect(shown()).toBe('NEWSNEWS');
+    document.dispatchEvent(new Event('htmx:afterSettle'));  // a swap elsewhere: nothing new
+    expect(fetch).toHaveBeenCalledTimes(1);
+    document.body.innerHTML = page('Weather');
+    document.dispatchEvent(new Event('htmx:afterSettle'));
+    expect(shown()).toBe('WEATHERNEWS');
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(stop).toHaveBeenCalledTimes(2);  // before each new poller starts
+  });
+});
+
 describe('posted', () => {
   it('says when nothing has been posted', () => {
     const line = document.createElement('span');

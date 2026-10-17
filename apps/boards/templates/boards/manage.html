@@ -13,7 +13,7 @@
 
   {# The selected board, its controls and editor, then the links; the board list beside them on a wide screen. Without JavaScript every form posts and the page reloads on the same board; with it, htmx swaps the part that changed so the page stays put. #}
   <div class="split">
-    <section class="stack" aria-label="What the display shows">
+    <section class="stack" id="board-view" aria-label="What the display shows">
       {% include "boards/_flapboard.html" with id="display-preview" name=board.name text=shows tag="On the display" %}
       <div class="control-strip">
         <form id="replay" method="post" action="{% url 'boards:replay' %}" hx-post="{% url 'boards:replay' %}" hx-swap="none">
@@ -41,10 +41,11 @@
 
     <section class="card stack split__side" id="boards" aria-labelledby="boards-h">
       <h2 id="boards-h">Boards</h2>
-      <ol class="item-list">
+      {# With htmx, picking a board swaps in its view, editor and this list without moving the page. #}
+      <ol class="item-list" hx-target="#board-view" hx-select="#board-view" hx-select-oob="#editor,#boards" hx-swap="outerHTML show:none" hx-push-url="true">
         {% for each in boards %}
           <li class="item">
-            <a class="item__main item__title" href="?board={{ each.uuid }}"{% if each == board %} aria-current="page"{% endif %}>{{ each.name }}</a>
+            <a class="item__main item__title" href="?board={{ each.uuid }}" hx-get="?board={{ each.uuid }}"{% if each == board %} aria-current="page"{% endif %}>{{ each.name }}</a>
             <div class="item__actions">
               {% if boards|length > 1 %}<a class="icon-button" href="{% url 'boards:delete' each.uuid %}" aria-label="Delete {{ each.name }}…" title="Delete {{ each.name }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></a>{% endif %}
             </div>
