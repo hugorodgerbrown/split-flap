@@ -24,7 +24,7 @@ class TestMCPAuth(MCPAuthContract):
         return UserFactory.create()
 
     def make_refused_user(self, django_user_model: Any) -> Any:
-        """Under active_user the only refused account is an inactive one."""
+        """Under every_account the only refused account is an inactive one."""
         return UserFactory.create(is_active=False)
 
 
@@ -237,6 +237,17 @@ def test_staff_only_policy() -> None:
     assert staff_only(SimpleNamespace(is_active=True, is_staff=True))
     assert not staff_only(SimpleNamespace(is_active=True, is_staff=False))
     assert not staff_only(SimpleNamespace(is_active=False, is_staff=True))
+
+
+def test_every_account_policy_is_the_one_in_use(settings: Any) -> None:
+    """Any active account may connect, and that is the rule the project uses."""
+    from types import SimpleNamespace
+
+    from apps.mcp.policy import every_account
+
+    assert settings.MCP_AUTH["CAN_CONNECT"] == "apps.mcp.policy.every_account"
+    assert every_account(SimpleNamespace(is_active=True, is_staff=False))
+    assert not every_account(SimpleNamespace(is_active=False, is_staff=True))
 
 
 @pytest.mark.django_db

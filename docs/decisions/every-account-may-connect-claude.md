@@ -13,7 +13,7 @@ have a live board.
 
 ## Decision
 
-`MCP_AUTH["CAN_CONNECT"]` is `mcp_auth.policy.active_user`: any active
+`MCP_AUTH["CAN_CONNECT"]` is `apps.mcp.policy.every_account`: any active
 account may connect a client. It is set in `config/settings.py` rather
 than through the template's `mcp_can_connect` question, whose choices
 stop at staff and superusers. `.copier-answers.yml` keeps the template's
