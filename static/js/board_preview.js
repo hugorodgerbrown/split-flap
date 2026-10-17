@@ -1,16 +1,15 @@
 /*
  * static/js/board_preview.js — the board drawn still on the app's pages, kept up to date.
  *
- * The server draws each board as it stands (boards/_flapboard.html, styled
- * by board.css), so
- * the pages work without this file. With it:
+ * The server draws each board as it stands (boards/_flapboard.html), so the
+ * page works without this file. With it:
  *
- * - the board page's preview follows the message box as you type, says
+ * - the preview follows the board editor's message box as you type, says
  *   "Draft" while it differs from what the display shows, counts the rows,
  *   and keeps Save off until there's a change that fits;
  * - the palette shows, and each key adds its code where the cursor is;
- * - the display page's preview asks the server what the board shows, so a
- *   Routine's post appears without a reload.
+ * - the preview asks the server what the board shows, so a Routine's post
+ *   appears without a reload, in the editor too unless you're mid-draft.
  *
  * Layout comes from flaptext.js, which the TV's board uses too.
  */
@@ -20,10 +19,6 @@
   const SVG = 'http://www.w3.org/2000/svg';
   const DRAFT = 'Draft';
   const SAVED = 'On the display';
-  const NOTES = {
-    [DRAFT]: 'Draft: the display still shows the last message until you save this one.',
-    [SAVED]: 'This is what the display shows on this board now.',
-  };
 
   function face(symbol, pictograms) {
     const el = document.createElement('span');
@@ -94,7 +89,6 @@
     const rowCount = form.querySelector('[data-row-count]');
     const charCount = form.querySelector('[data-char-count]');
     const tag = board.querySelector('[data-flapboard-tag]');
-    const note = document.querySelector('[data-draft-note]');
     const { ROWS } = self.FlapText;
 
     function update() {
@@ -103,7 +97,6 @@
       const draft = text.trim() !== form.dataset.saved.trim();
       draw(board, form.dataset.name, text.trim() || form.dataset.name);
       tag.textContent = draft ? DRAFT : SAVED;
-      if (note) note.textContent = NOTES[tag.textContent];
       rowCount.textContent = fits
         ? rows + ' of ' + ROWS + ' rows'
         : rows + ' of ' + ROWS + ' rows: shorten it so nothing is cut off';
@@ -143,6 +136,16 @@
     const name = status.dataset.liveBoard;
     let etag = null;
     let shown = status.dataset.postedAt || null;  // posted_at as the server drew it
+    const form = document.querySelector('form[data-board-editor][data-preview="' + status.dataset.preview + '"]');
+
+    // Show a new post; an editor on this board takes it too, but keeps a draft in the box.
+    function follow(text) {
+      if (!form) { draw(board, name, text || name); return; }
+      const textarea = form.querySelector('textarea');
+      if (textarea.value.trim() === form.dataset.saved.trim()) textarea.value = text;
+      form.dataset.saved = text;
+      textarea.dispatchEvent(new Event('input', { bubbles: true }));
+    }
 
     async function poll() {
       try {
@@ -154,9 +157,9 @@
           const state = await response.json();
           const found = state.boards.find(function (b) { return b.name === name; });
           if (found && found.posted_at !== shown) {
-            draw(board, name, found.message || name);
             posted(status.querySelector('[data-posted]'), found.posted_at);
             shown = found.posted_at;
+            follow(found.message);
           }
         }
       } catch (error) {

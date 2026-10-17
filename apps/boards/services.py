@@ -86,21 +86,17 @@ def post_message(display: Display, text: str, name: str | None = None) -> Board:
     return board
 
 
-def check_name(display: Display, name: str, board: Board | None = None) -> str:
+def check_name(display: Display, name: str) -> str:
     """Return ``name`` tidied, or raise BoardError if ``display`` can't take it.
 
-    A name is unique on its display, ignoring case; ``board`` is the board
-    being renamed, which may keep its own name.
+    A name is unique on its display, ignoring case.
     """
     name = " ".join(name.split())
     if not name:
         raise BoardError("Give the board a name.")
     if len(name) > MAX_NAME_LENGTH:
         raise BoardError(f"Keep the name under {MAX_NAME_LENGTH} characters.")
-    taken = display.boards.named(name)
-    if board is not None:
-        taken = taken.exclude(pk=board.pk)
-    if taken.exists():
+    if display.boards.named(name).exists():
         raise BoardError(f"There's already a board called {name}.")
     return name
 
@@ -157,32 +153,6 @@ def replay(display: Display) -> Display:
     )
     display.refresh_from_db(fields=["replays", "updated_at"])
     return display
-
-
-def rename_board(board: Board, name: str) -> Board:
-    """Give ``board`` a new name."""
-    board.name = check_name(board.display, name, board)
-    board.save(update_fields=["name", "updated_at"])
-    return board
-
-
-def move_board(board: Board, step: int) -> Board:
-    """Move ``board`` ``step`` places along its display's order (-1 is up, 1 is down).
-
-    The display's boards are numbered afresh, so the order holds even where
-    two had the same position. A move past either end does nothing.
-    """
-    with transaction.atomic():
-        boards = _boards_locked(board.display_id)
-        index = next(i for i, b in enumerate(boards) if b.pk == board.pk)
-        target = index + step
-        if 0 <= target < len(boards):
-            boards.insert(target, boards.pop(index))
-        for position, each in enumerate(boards):
-            if each.position != position:
-                each.position = position
-                each.save(update_fields=["position", "updated_at"])
-    return board
 
 
 def delete_board(board: Board) -> None:

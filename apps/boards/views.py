@@ -11,6 +11,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from functools import wraps
 from typing import Any
+from urllib.parse import urlencode
 from uuid import UUID
 
 from django.contrib.auth.decorators import login_required
@@ -21,7 +22,7 @@ from django.templatetags.static import static
 from django.urls import reverse
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
-from apps.boards.forms import BoardNameForm, MessageForm, MoveForm, SoundDelayForm, SoundForm
+from apps.boards.forms import BoardNameForm, MessageForm, SoundDelayForm, SoundForm
 from apps.boards.layout import COLOURS, PICTOGRAMS, Tile, board_tiles
 from apps.boards.models import (
     MAX_BOARDS,
@@ -36,9 +37,7 @@ from apps.boards.services import (
     add_board,
     delete_board,
     display_for,
-    move_board,
     post_message,
-    rename_board,
     replay,
     set_sound,
     set_sound_delay,
@@ -122,24 +121,45 @@ def _drawing(board: Board) -> dict[str, object]:
     return {"shows": shows, "tiles": board_tiles(shows), "pictograms": static(PICTOGRAMS_SVG)}
 
 
-def _manage(request: HttpRequest, form: BoardNameForm, status: int = 200) -> HttpResponse:
-    """Render the display page, previewing the board ``?board=`` names (or the first)."""
-    display = form.display
+def _manage_url(board: object = None, anchor: str = "") -> str:
+    """Return the display page's address, with ``board`` selected and ``anchor`` on the end."""
+    query = f"?{urlencode({'board': board})}" if board else ""
+    return reverse("boards:manage") + query + anchor
+
+
+def _manage(
+    request: HttpRequest,
+    display: Display,
+    *,
+    selected: object = None,
+    add_form: BoardNameForm | None = None,
+    message_form: MessageForm | None = None,
+    status: int = 200,
+) -> HttpResponse:
+    """Render the display page with one board selected: ``selected``, ``?board=``, or the first.
+
+    The selected board is drawn, with its editor below; any form that
+    failed is shown in place of a fresh one.
+    """
     boards = list(display.boards.all())
-    preview = next((b for b in boards if str(b.uuid) == request.GET.get("board")), boards[0])
+    wanted = str(selected or request.GET.get("board", ""))
+    board = next((b for b in boards if str(b.uuid) == wanted), boards[0])
     return render(
         request,
         "boards/manage.html",
         {
             "display": display,
             "boards": boards,
-            "preview": preview,
-            **_drawing(preview),
+            "board": board,
+            **_drawing(board),
+            "message_form": message_form or MessageForm(initial={"text": board.message}),
+            "palette": PALETTE,
+            "max_message_length": MAX_MESSAGE_LENGTH,
             "tv_url": request.build_absolute_uri(reverse("tv:board", args=[display.uuid])),
             "state_url": reverse("tv:state", args=[display.uuid]),
             "poll_seconds": POLL_SECONDS,
             "mcp_url": mcp_url(),
-            "form": form,
+            "form": add_form or BoardNameForm(display),
             "max_boards": MAX_BOARDS,
             # The Sound timing stepper's two buttons post the next step either way.
             "delay_less": max(display.sound_delay_ms - SOUND_DELAY_STEP_MS, 0),
@@ -172,9 +192,8 @@ def _controls_login_required(view: Callable[..., HttpResponse]) -> Callable[...,
 @require_GET
 @login_required
 def display_manage(request: HttpRequest) -> HttpResponse:
-    """The display page: a preview, the display's link, and its boards in order."""
-    display = display_for(signed_in_user(request))
-    return _manage(request, BoardNameForm(display))
+    """The display page: the selected board and its editor, the display's links, and its boards."""
+    return _manage(request, display_for(signed_in_user(request)))
 
 
 @require_POST
@@ -185,7 +204,7 @@ def display_sound(request: HttpRequest) -> HttpResponse:
     form = SoundForm(request.POST)
     if form.is_valid():
         set_sound(display, form.on())
-    return redirect(reverse("boards:manage") + "#sound")
+    return redirect(_manage_url(request.POST.get("board"), "#sound"))
 
 
 @require_POST
@@ -196,7 +215,7 @@ def display_sound_delay(request: HttpRequest) -> HttpResponse:
     form = SoundDelayForm(request.POST)
     if form.is_valid():
         set_sound_delay(display, form.cleaned_data["sound_delay_ms"])
-    return redirect(reverse("boards:manage") + "#sound-timing")
+    return redirect(_manage_url(request.POST.get("board"), "#sound-timing"))
 
 
 @require_POST
@@ -204,7 +223,7 @@ def display_sound_delay(request: HttpRequest) -> HttpResponse:
 def display_replay(request: HttpRequest) -> HttpResponse:
     """Have the display flip its board again, without changing the message."""
     replay(display_for(signed_in_user(request)))
-    return redirect(reverse("boards:manage") + "#replay")
+    return redirect(_manage_url(request.POST.get("board"), "#replay"))
 
 
 @require_POST
@@ -219,38 +238,15 @@ def board_add(request: HttpRequest) -> HttpResponse:
         except BoardError as error:
             form.add_error("name", str(error))
         else:
-            return redirect("boards:board", board.uuid)
-    return _manage(request, form, status=400)
-
-
-def _board_page(
-    request: HttpRequest,
-    board: Board,
-    message_form: MessageForm | None = None,
-    name_form: BoardNameForm | None = None,
-    status: int = 200,
-) -> HttpResponse:
-    """Render a board's page, with any form that failed in place of a fresh one."""
-    return render(
-        request,
-        "boards/board.html",
-        {
-            "board": board,
-            **_drawing(board),
-            "message_form": message_form or MessageForm(initial={"text": board.message}),
-            "name_form": name_form or BoardNameForm(board.display, initial={"name": board.name}),
-            "palette": PALETTE,
-            "max_message_length": MAX_MESSAGE_LENGTH,
-        },
-        status=status,
-    )
+            return redirect(_manage_url(board.uuid))
+    return _manage(request, display, add_form=form, status=400)
 
 
 @require_GET
 @login_required
 def board_detail(request: HttpRequest, board_uuid: UUID) -> HttpResponse:
-    """A board's page: what it shows, a box to change it, and its settings."""
-    return _board_page(request, _board(request, board_uuid))
+    """A board's old page: its editor is on the display page now, so go there."""
+    return redirect(_manage_url(_board(request, board_uuid).uuid))
 
 
 @require_POST
@@ -260,32 +256,9 @@ def board_message(request: HttpRequest, board_uuid: UUID) -> HttpResponse:
     board = _board(request, board_uuid)
     form = MessageForm({"text": ""} if "clear" in request.POST else request.POST)
     if not form.is_valid():
-        return _board_page(request, board, message_form=form, status=400)
+        return _manage(request, board.display, selected=board.uuid, message_form=form, status=400)
     post_message(board.display, form.cleaned_data["text"], board.name)
-    return redirect("boards:board", board.uuid)
-
-
-@require_POST
-@login_required
-def board_rename(request: HttpRequest, board_uuid: UUID) -> HttpResponse:
-    """Give a board a new name."""
-    board = _board(request, board_uuid)
-    form = BoardNameForm(board.display, request.POST, board=board)
-    if not form.is_valid():
-        return _board_page(request, board, name_form=form, status=400)
-    rename_board(board, form.cleaned_data["name"])
-    return redirect("boards:board", board.uuid)
-
-
-@require_POST
-@login_required
-def board_move(request: HttpRequest, board_uuid: UUID) -> HttpResponse:
-    """Move a board up or down the display's order."""
-    board = _board(request, board_uuid)
-    form = MoveForm(request.POST)
-    if form.is_valid():
-        move_board(board, form.step())
-    return redirect(reverse("boards:manage") + "#boards")
+    return redirect(_manage_url(board.uuid))
 
 
 @require_http_methods(["GET", "POST"])
