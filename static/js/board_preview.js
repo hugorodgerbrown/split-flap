@@ -142,7 +142,7 @@
     const board = document.getElementById(status.dataset.preview);
     const name = status.dataset.liveBoard;
     let etag = null;
-    let shown;  // posted_at as first drawn by the server
+    let shown = status.dataset.postedAt || null;  // posted_at as the server drew it
 
     async function poll() {
       try {
@@ -154,10 +154,8 @@
           const state = await response.json();
           const found = state.boards.find(function (b) { return b.name === name; });
           if (found && found.posted_at !== shown) {
-            if (shown !== undefined) {
-              draw(board, name, found.message || name);
-              posted(status.querySelector('[data-posted]'), found.posted_at);
-            }
+            draw(board, name, found.message || name);
+            posted(status.querySelector('[data-posted]'), found.posted_at);
             shown = found.posted_at;
           }
         }

@@ -116,6 +116,19 @@ def test_manage_shows_the_links_preview_and_boards(signed_in: Client, user: Any)
     assert 'aria-label="Move Weather down" disabled' in content
 
 
+def test_manage_tells_the_preview_when_its_board_was_posted(
+    signed_in: Client, user: Any, client: Client
+) -> None:
+    """The live preview compares this with the TV's state, so it redraws only on a newer post."""
+    display = display_for(user)
+    post_message(display, "Hello")
+    posted_at = client.get(reverse("tv:state", args=[display.uuid])).json()["boards"][0][
+        "posted_at"
+    ]
+    page = signed_in.get(reverse("boards:manage")).content.decode()
+    assert f'data-posted-at="{posted_at}"' in page
+
+
 def test_manage_previews_the_board_asked_for(signed_in: Client, user: Any) -> None:
     """``?board=`` picks which board the preview draws; an unknown one draws the first."""
     weather = BoardFactory.create(display=display_for(user), name="Weather", position=1)

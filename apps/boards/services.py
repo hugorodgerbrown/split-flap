@@ -101,15 +101,27 @@ def check_name(display: Display, name: str, board: Board | None = None) -> str:
     return name
 
 
+def _boards_locked(display_id: int) -> list[Board]:
+    """Lock the display and return its boards, read afresh, inside the caller's transaction.
+
+    Changes that count or renumber a display's boards take this lock first,
+    so two at once (two tabs) can't both pass a check meant for one.
+    """
+    Display.objects.select_for_update().filter(pk=display_id).first()
+    return list(Board.objects.filter(display_id=display_id))
+
+
 def add_board(display: Display, name: str) -> Board:
     """Add a board called ``name`` to the end of ``display``'s boards."""
     name = check_name(display, name)
-    # Read afresh: ``display`` may carry boards prefetched before this change.
-    boards = list(Board.objects.filter(display=display))
-    if len(boards) >= MAX_BOARDS:
-        raise BoardError(f"A display holds up to {MAX_BOARDS} boards: delete one to add another.")
-    position = max((b.position for b in boards), default=-1) + 1
-    return Board.objects.create(display=display, name=name, position=position)
+    with transaction.atomic():
+        boards = _boards_locked(display.pk)
+        if len(boards) >= MAX_BOARDS:
+            raise BoardError(
+                f"A display holds up to {MAX_BOARDS} boards: delete one to add another."
+            )
+        position = max((b.position for b in boards), default=-1) + 1
+        return Board.objects.create(display=display, name=name, position=position)
 
 
 def rename_board(board: Board, name: str) -> Board:
@@ -125,20 +137,22 @@ def move_board(board: Board, step: int) -> Board:
     The display's boards are numbered afresh, so the order holds even where
     two had the same position. A move past either end does nothing.
     """
-    boards = list(Board.objects.filter(display_id=board.display_id))
-    index = next(i for i, b in enumerate(boards) if b.pk == board.pk)
-    target = index + step
-    if 0 <= target < len(boards):
-        boards.insert(target, boards.pop(index))
-    for position, each in enumerate(boards):
-        if each.position != position:
-            each.position = position
-            each.save(update_fields=["position", "updated_at"])
+    with transaction.atomic():
+        boards = _boards_locked(board.display_id)
+        index = next(i for i, b in enumerate(boards) if b.pk == board.pk)
+        target = index + step
+        if 0 <= target < len(boards):
+            boards.insert(target, boards.pop(index))
+        for position, each in enumerate(boards):
+            if each.position != position:
+                each.position = position
+                each.save(update_fields=["position", "updated_at"])
     return board
 
 
 def delete_board(board: Board) -> None:
     """Delete ``board``, unless it's its display's last one."""
-    if Board.objects.filter(display_id=board.display_id).count() <= 1:
-        raise BoardError("A display needs at least one board, so this one stays.")
-    board.delete()
+    with transaction.atomic():
+        if len(_boards_locked(board.display_id)) <= 1:
+            raise BoardError("A display needs at least one board, so this one stays.")
+        board.delete()

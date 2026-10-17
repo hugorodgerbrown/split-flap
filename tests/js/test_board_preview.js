@@ -143,6 +143,24 @@ describe('live', () => {
     expect(document.querySelector('[data-posted] time').dateTime).toBe('2026-10-17T07:00:00+01:00');
   });
 
+  it('draws a post that landed before the first answer', async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(state('2026-10-17T07:00:00+00:00', 'Early')));
+    BoardPreview.live(document.querySelector('[data-live-board]'));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(shown()).toBe('EARLY');
+  });
+
+  it('leaves the server\'s drawing alone while nothing has changed', async () => {
+    vi.useFakeTimers();
+    const status = document.querySelector('[data-live-board]');
+    status.dataset.postedAt = '2026-10-17T07:00:00+00:00';
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(state('2026-10-17T07:00:00+00:00', 'Same')));
+    BoardPreview.live(status);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(tiles()).toHaveLength(0);
+  });
+
   it('keeps what it drew when the network is away', async () => {
     vi.useFakeTimers();
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('offline')));

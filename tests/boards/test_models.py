@@ -168,6 +168,23 @@ def test_delete_board_keeps_the_last(user: Any) -> None:
     assert Board.objects.filter(display=display).count() == 1
 
 
+def test_board_changes_lock_the_display(user: Any, monkeypatch: Any) -> None:
+    """Adding, moving and deleting lock the display, so two at once can't break a limit."""
+    display = display_for(user)
+    locked = []
+    real = Display.objects.select_for_update
+
+    def spy(*args: Any, **kwargs: Any) -> Any:
+        locked.append(True)
+        return real(*args, **kwargs)
+
+    monkeypatch.setattr(Display.objects, "select_for_update", spy)
+    news = add_board(display, "News")
+    move_board(news, -1)
+    delete_board(news)
+    assert len(locked) == 3
+
+
 def test_state_version_changes_with_content(user: Any) -> None:
     """The state's version is stable until a message changes."""
     display = display_for(user)

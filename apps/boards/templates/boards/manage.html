@@ -17,7 +17,7 @@
   <div class="split">
     <section class="stack" aria-label="What the display shows">
       {% include "boards/_flapboard.html" with id="display-preview" name=preview.name text=shows tag="" %}
-      <p class="meta" data-live-board="{{ preview.name }}" data-state-url="{{ state_url }}" data-poll-seconds="{{ poll_seconds }}" data-preview="display-preview">
+      <p class="meta" data-live-board="{{ preview.name }}" data-posted-at="{{ preview.posted_at.isoformat|default:'' }}" data-state-url="{{ state_url }}" data-poll-seconds="{{ poll_seconds }}" data-preview="display-preview">
         <strong>{{ preview.name }}</strong> · <span data-posted>{% include "boards/_posted.html" with board=preview %}</span>
       </p>
       {% if boards|length > 1 %}
