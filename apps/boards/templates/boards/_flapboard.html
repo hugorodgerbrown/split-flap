@@ -1,0 +1,7 @@
+{# The board drawn still (css/board.css), as the display shows "text". board_preview.js redraws it as the message changes. #}
+<div class="board-fit">
+  <div class="board board--fluid" id="{{ id }}" role="img" aria-label="{{ name }}: {{ text }}" data-flapboard data-pictograms="{{ pictograms }}">
+    <div class="grid" data-flapboard-grid>{% for tile in tiles %}<div class="cell"><div class="half top">{% include "boards/_face.html" %}</div><div class="half bottom">{% include "boards/_face.html" %}</div></div>{% endfor %}</div>
+    <div class="engrave" aria-hidden="true"><span>{{ name }}</span><span class="engrave__tag" data-flapboard-tag>{{ tag }}</span></div>
+  </div>
+</div>

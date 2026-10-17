@@ -33,7 +33,7 @@ describe('front board', () => {
   it('moves on to the next board, its name, light and label', () => {
     vi.advanceTimersByTime(8000);
     expect(faces().map(f => f[0].textContent)).toEqual(['Y', 'O', '']);
-    expect(faces()[2].every(f => f.className === 'face tile t-g')).toBe(true);
+    expect(faces()[2].every(f => f.className === 'face colour t-g')).toBe(true);
     expect(document.querySelector('[data-board-name]').textContent).toBe('Weather');
     expect([...document.querySelectorAll('.led')].map(l => l.classList.contains('on'))).toEqual([false, true]);
     expect(document.querySelector('[data-front-board]').getAttribute('aria-label')).toBe('Yo');
@@ -42,6 +42,6 @@ describe('front board', () => {
   it('comes back round to the first board', () => {
     vi.advanceTimersByTime(6500);
     expect(faces().map(f => f[0].textContent)).toEqual(['H', 'I', '']);
-    expect(faces()[2][0].className).toBe('face tile t-r');
+    expect(faces()[2][0].className).toBe('face colour t-r');
   });
 });

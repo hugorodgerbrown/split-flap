@@ -84,7 +84,12 @@
       <button class="button" type="button">Primary</button>
       <button class="button button--secondary" type="button">Secondary</button>
       <button class="button button--quiet" type="button">Quiet</button>
+      <button class="button button--danger" type="button">Danger</button>
       <button class="button" type="button" disabled>Disabled</button>
+    </div>
+    <div class="button-row">
+      <button class="icon-button" type="button" aria-label="Move up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button>
+      <button class="icon-button" type="button" aria-label="Move down" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
     </div>
   </section>
 
@@ -99,6 +104,10 @@
       <input type="email" value="not an email">
     </label>
     <ul class="errorlist"><li>Enter a valid email address.</li></ul>
+    <form class="inline-form">
+      <label class="field"><span class="field__label">A field and its button</span><input type="text" placeholder="For example, Weather"></label>
+      <button class="button" type="button">Add</button>
+    </form>
     <p class="form-error">That code has expired. Ask for a new one.</p>
     <label class="field">
       <span class="field__label">A code, as one field</span>
@@ -139,6 +148,13 @@
           <p class="meta">Rows are ruled between, not around</p>
         </div>
       </li>
+      <li class="item">
+        <a class="item__main" href="#ds-lists"><span class="item__title">An item that opens a page</span><span class="meta">Its meta line is cut to one line, however long it runs</span></a>
+        <div class="item__actions">
+          <button class="icon-button" type="button" aria-label="Move up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button>
+          <button class="icon-button" type="button" aria-label="Move down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+        </div>
+      </li>
     </ul>
     <ul class="note-list">
       <li class="note"><p class="note__text">A note</p><p class="note__meta">Saved</p></li>
@@ -153,6 +169,43 @@
       <li class="note note--failed"><p class="note__text">A note the server refused</p><p class="note__meta">Couldn't send</p></li>
       <li class="note note--empty">No notes yet.</li>
     </ul>
+  </section>
+
+  <section class="card stack" aria-labelledby="ds-boards">
+    <h2 id="ds-boards">The display and its boards</h2>
+    <p class="meta">The board itself is drawn by static/css/preview.css, apart from the design system (docs/decisions/the-tv-board-has-its-own-stylesheet.md).</p>
+    <a class="back-link" href="#ds-boards"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>A back link</a>
+    <nav class="segmented" aria-label="A segmented choice">
+      <a class="segmented__option" href="#ds-boards" aria-current="true">Home</a>
+      <a class="segmented__option" href="#ds-boards">News</a>
+      <a class="segmented__option" href="#ds-boards">Weather</a>
+    </nav>
+    <div class="split">
+      <p class="notice">Split: the main column</p>
+      <p class="notice">and the one beside it, on a wide screen</p>
+    </div>
+    <details class="editor" open>
+      <summary class="editor__toggle">The edit panel <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></summary>
+      <div class="editor__body">
+        <div class="editor__text">
+          <label class="field"><span class="field__label">Message</span><textarea rows="3">Good morning</textarea></label>
+          <p class="editor__counts"><span>1 of 6 rows</span><span>12 / 400</span></p>
+          <p class="editor__counts"><span class="editor__count--over">7 of 6 rows: shorten it so nothing is cut off</span><span>160 / 400</span></p>
+        </div>
+        <div class="palette">
+          <span class="field__label">A palette</span>
+          <div class="palette__keys">
+            <button class="palette__key" type="button" aria-label="Sun" title=":sun:"><svg aria-hidden="true"><use href="{% static 'img/pictograms.svg' %}#sun"></use></svg></button>
+            <button class="palette__key" type="button" aria-label="Train" title=":train:"><svg aria-hidden="true"><use href="{% static 'img/pictograms.svg' %}#train"></use></svg></button>
+            <button class="palette__key" type="button" aria-label="Heart" title=":heart:"><svg aria-hidden="true"><use href="{% static 'img/pictograms.svg' %}#heart"></use></svg></button>
+          </div>
+        </div>
+      </div>
+      <div class="editor__actions">
+        <button class="button button--secondary" type="button">Clear the board</button>
+        <button class="button" type="button">Save</button>
+      </div>
+    </details>
   </section>
 
   <section class="card stack" aria-labelledby="ds-pages">

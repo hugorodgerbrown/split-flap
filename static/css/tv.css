@@ -48,8 +48,9 @@ body.idle { cursor: none; }
 }
 .hud button:hover { color: var(--ui-fg); background: rgba(255,255,255,.05); }
 .hud button:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 1px; }
-.tabs button[aria-selected="true"], .tabs button[aria-pressed="true"] { color: #141414; background: var(--ui-fg); }
 .hud button[aria-pressed="true"] { color: var(--ui-fg); }
+/* After the rule above, so the chosen flip speed keeps its dark text on the light pill. */
+.tabs button[aria-selected="true"], .tabs button[aria-pressed="true"] { color: #141414; background: var(--ui-fg); }
 .hud button[aria-pressed="true"] .dot { background: var(--ui-accent); box-shadow: 0 0 8px rgba(245,194,43,.6); }
 .dot { width: 7px; height: 7px; border-radius: 50%; background: #3d3b36; }
 .sep { width: 1px; align-self: stretch; margin: 6px 2px; background: var(--ui-line); }

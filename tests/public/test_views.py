@@ -94,7 +94,7 @@ def test_home_shows_the_board_itself(client: Client) -> None:
     assert "js/front_board.js" in content
     assert 'class="board board--fluid"' in content
     assert content.count('<div class="cell">') == COLS * ROWS
-    assert '<span class="face tile t-r">' in content
+    assert '<span class="face colour t-r">' in content
     assert ">Morning<" in content
     assert 'aria-label="Good morning bins go out tonight posted by claude 07:00"' in content
 

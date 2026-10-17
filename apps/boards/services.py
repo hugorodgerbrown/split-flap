@@ -10,7 +10,14 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.boards.layout import COLS, ROWS, rows_needed
-from apps.boards.models import FIRST_BOARD_NAME, MAX_MESSAGE_LENGTH, Board, Display
+from apps.boards.models import (
+    FIRST_BOARD_NAME,
+    MAX_BOARDS,
+    MAX_MESSAGE_LENGTH,
+    MAX_NAME_LENGTH,
+    Board,
+    Display,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -73,3 +80,65 @@ def post_message(display: Display, text: str, name: str | None = None) -> Board:
     board.posted_at = timezone.now() if text else None
     board.save(update_fields=["message", "posted_at", "updated_at"])
     return board
+
+
+def check_name(display: Display, name: str, board: Board | None = None) -> str:
+    """Return ``name`` tidied, or raise BoardError if ``display`` can't take it.
+
+    A name is unique on its display, ignoring case; ``board`` is the board
+    being renamed, which may keep its own name.
+    """
+    name = " ".join(name.split())
+    if not name:
+        raise BoardError("Give the board a name.")
+    if len(name) > MAX_NAME_LENGTH:
+        raise BoardError(f"Keep the name under {MAX_NAME_LENGTH} characters.")
+    taken = display.boards.named(name)
+    if board is not None:
+        taken = taken.exclude(pk=board.pk)
+    if taken.exists():
+        raise BoardError(f"There's already a board called {name}.")
+    return name
+
+
+def add_board(display: Display, name: str) -> Board:
+    """Add a board called ``name`` to the end of ``display``'s boards."""
+    name = check_name(display, name)
+    # Read afresh: ``display`` may carry boards prefetched before this change.
+    boards = list(Board.objects.filter(display=display))
+    if len(boards) >= MAX_BOARDS:
+        raise BoardError(f"A display holds up to {MAX_BOARDS} boards: delete one to add another.")
+    position = max((b.position for b in boards), default=-1) + 1
+    return Board.objects.create(display=display, name=name, position=position)
+
+
+def rename_board(board: Board, name: str) -> Board:
+    """Give ``board`` a new name."""
+    board.name = check_name(board.display, name, board)
+    board.save(update_fields=["name", "updated_at"])
+    return board
+
+
+def move_board(board: Board, step: int) -> Board:
+    """Move ``board`` ``step`` places along its display's order (-1 is up, 1 is down).
+
+    The display's boards are numbered afresh, so the order holds even where
+    two had the same position. A move past either end does nothing.
+    """
+    boards = list(Board.objects.filter(display_id=board.display_id))
+    index = next(i for i, b in enumerate(boards) if b.pk == board.pk)
+    target = index + step
+    if 0 <= target < len(boards):
+        boards.insert(target, boards.pop(index))
+    for position, each in enumerate(boards):
+        if each.position != position:
+            each.position = position
+            each.save(update_fields=["position", "updated_at"])
+    return board
+
+
+def delete_board(board: Board) -> None:
+    """Delete ``board``, unless it's its display's last one."""
+    if Board.objects.filter(display_id=board.display_id).count() <= 1:
+        raise BoardError("A display needs at least one board, so this one stays.")
+    board.delete()

@@ -26,6 +26,10 @@ MAX_MESSAGE_LENGTH = 400
 # Longest board name; short enough to read on the TV's engraved label.
 MAX_NAME_LENGTH = 40
 
+# Most boards one display holds: the TV picks the first nine by number key,
+# and a cycle much longer than this is never seen through.
+MAX_BOARDS = 12
+
 # The board a new display starts with.
 FIRST_BOARD_NAME = "Home"
 

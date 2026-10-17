@@ -1,44 +1,94 @@
 {% extends "base.html" %}
 {% load static %}
 {% block title %}{{ display.name }} · {{ pwa.name }}{% endblock %}
-{% block extra_js %}<script src="{% static 'js/copy.js' %}" defer></script>{% endblock %}
+{% block main_class %} app-main--wide{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/board.css' %}">{% endblock %}
+{% block extra_js %}
+  <script src="{% static 'js/copy.js' %}" defer></script>
+  <script src="{% static 'js/flaptext.js' %}" defer></script>
+  <script src="{% static 'js/board_preview.js' %}" defer></script>
+{% endblock %}
 {% block content %}
-  <section class="card stack">
+  <header>
+    <p class="eyebrow">Your display</p>
     <h1>{{ display.name }}</h1>
-    <p class="meta">Open this address on your TV's browser. Anyone with it can watch the board, but only you can change it.</p>
-    <p class="copy-field">
-      <code class="copy-field__value" id="tv-url">{{ tv_url }}</code>
-      <button class="button button--secondary" type="button" data-copy="{{ tv_url }}" data-copy-target="tv-url" data-copied-label="Copied" hidden>Copy</button>
-    </p>
-    <p><a href="{% url 'tv:board' display.uuid %}">Open the board</a></p>
-  </section>
-  <section class="card stack">
-    <h2>Post a message</h2>
-    <form class="stack" method="post" action="{% url 'boards:post' %}">
-      {% csrf_token %}
-      {{ form.non_field_errors }}
-      <label class="field"><span class="field__label">Board</span>{{ form.board }}</label>
-      <label class="field"><span class="field__label">Message</span>{{ form.text }}</label>
-      {{ form.text.errors }}
-      <p class="meta" id="text-help">Up to six rows of 22 tiles. Emoji like ☀ 🌧 🚆 ❤ show as pictograms, and {r} {o} {y} {g} {b} {v} {w} make colour tiles. Leave it empty to clear the board.</p>
-      <button class="button" type="submit">Show on the board</button>
-    </form>
-  </section>
-  <section class="card">
-    <ul class="item-list">
+  </header>
+
+  <div class="split">
+    <section class="stack" aria-label="What the display shows">
+      {% include "boards/_flapboard.html" with id="display-preview" name=preview.name text=shows tag="" %}
+      <p class="meta" data-live-board="{{ preview.name }}" data-state-url="{{ state_url }}" data-poll-seconds="{{ poll_seconds }}" data-preview="display-preview">
+        <strong>{{ preview.name }}</strong> · <span data-posted>{% include "boards/_posted.html" with board=preview %}</span>
+      </p>
+      {% if boards|length > 1 %}
+        <nav class="segmented" aria-label="Preview a board">
+          {% for board in boards %}
+            <a class="segmented__option" href="?board={{ board.uuid }}"{% if board == preview %} aria-current="true"{% endif %}>{{ board.name }}</a>
+          {% endfor %}
+        </nav>
+      {% endif %}
+    </section>
+
+    <div class="stack">
+      <section class="card stack" aria-labelledby="link-h">
+        <h2 id="link-h">Your display link</h2>
+        <p class="copy-field">
+          <code class="copy-field__value" id="tv-url">{{ tv_url }}</code>
+          <button class="button button--secondary" type="button" data-copy="{{ tv_url }}" data-copy-target="tv-url" data-copied-label="Copied" hidden>Copy</button>
+        </p>
+        <p class="meta">Anyone with this link can see the board, so keep it to your own screens. The display cycles through your boards in the order below.</p>
+      </section>
+      {% if mcp_url %}
+        <section class="card stack" aria-labelledby="claude-h">
+          <h2 id="claude-h">Post from Claude</h2>
+          <p class="meta">Add {{ pwa.name }} as a connector in Claude, then a Routine can post the news or weather to a board on a schedule.</p>
+          <p class="copy-field">
+            <code class="copy-field__value" id="mcp-url">{{ mcp_url }}</code>
+            <button class="button button--secondary" type="button" data-copy="{{ mcp_url }}" data-copy-target="mcp-url" data-copied-label="Copied" hidden>Copy</button>
+          </p>
+        </section>
+      {% endif %}
+    </div>
+  </div>
+
+  <section class="card stack" id="boards" aria-labelledby="boards-h">
+    <div>
+      <h2 id="boards-h">Boards</h2>
+      <p class="meta">{{ boards|length }} board{{ boards|length|pluralize }} · the display shows them in this order</p>
+    </div>
+    <ol class="item-list">
       {% for board in boards %}
         <li class="item">
-          <div>
-            <p class="item__title">{{ board.name }}</p>
-            {% if board.message %}
-              <p>{{ board.message|linebreaksbr }}</p>
-              <p class="meta"><time datetime="{{ board.posted_at|date:'c' }}">Posted {{ board.posted_at|date:"j M, H:i" }}</time></p>
-            {% else %}
-              <p class="meta">Empty: the TV shows its name</p>
-            {% endif %}
+          <a class="item__main" href="{% url 'boards:board' board.uuid %}">
+            <span class="item__title">{{ board.name }}</span>
+            <span class="meta">{% if board.message %}{{ board.message }}{% else %}Empty, so the display shows its name{% endif %}</span>
+          </a>
+          <div class="item__actions">
+            <form method="post" action="{% url 'boards:move' board.uuid %}">
+              {% csrf_token %}
+              <button class="icon-button" type="submit" name="direction" value="up" aria-label="Move {{ board.name }} up"{% if forloop.first %} disabled{% endif %}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
+              </button>
+            </form>
+            <form method="post" action="{% url 'boards:move' board.uuid %}">
+              {% csrf_token %}
+              <button class="icon-button" type="submit" name="direction" value="down" aria-label="Move {{ board.name }} down"{% if forloop.last %} disabled{% endif %}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+              </button>
+            </form>
           </div>
         </li>
       {% endfor %}
-    </ul>
+    </ol>
+    {% if boards|length < max_boards %}
+      <form class="inline-form" method="post" action="{% url 'boards:add' %}">
+        {% csrf_token %}
+        <label class="field"><span class="field__label">New board</span>{{ form.name }}</label>
+        <button class="button" type="submit">Add board</button>
+      </form>
+      {{ form.name.errors }}
+    {% else %}
+      <p class="meta">A display holds up to {{ max_boards }} boards, so delete one to add another.</p>
+    {% endif %}
   </section>
 {% endblock %}

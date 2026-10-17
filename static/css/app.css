@@ -13,6 +13,9 @@
   --brand-text-soft: rgb(255 255 255 / 35%);
   --brand-text-2: #c9c4b8;
   --accent: #f5c22b;
+  /* Buttons and links: the brand in light mode, cream in dark so they still show. */
+  --action: #1C1B1A;
+  --action-text: #ffffff;
   --bg: #f6f7f9;
   --card: #ffffff;
   --text-1: #14171a;
@@ -62,6 +65,8 @@
     --warn-bg: #3a2f10;
     --warn-text: #f5d77a;
     --error: #f97066;
+    --action: #eeeae1;
+    --action-text: #14171a;
   }
 }
 
@@ -78,7 +83,7 @@ body {
 
 h1 { font-size: var(--type-xl); margin: 0; }
 h2 { font-size: var(--type-md); margin: 0; }
-a { color: var(--brand); }
+a { color: var(--action); }
 .meta { color: var(--text-2); font-size: var(--type-sm); }
 .stack > * + * { margin-top: var(--space-lg); }
 
@@ -108,6 +113,8 @@ a { color: var(--brand); }
 .app-header__link { color: inherit; font-weight: 600; text-decoration: none; }
 .app-main { max-width: 40rem; margin: 0 auto; padding: var(--space-lg); }
 .app-main > * + * { margin-top: var(--space-lg); }
+/* Pages that draw the board take more width, for bigger tiles. */
+.app-main--wide { max-width: 64rem; }
 
 /* The website's footer (DESIGN.md): links and copyright. */
 .site-footer {
@@ -172,7 +179,7 @@ a { color: var(--brand); }
   border-radius: var(--radius-card);
   padding: var(--space-lg);
 }
-.tile__icon { width: 24px; height: 24px; color: var(--brand); }
+.tile__icon { width: 24px; height: 24px; color: var(--action); }
 .tile__title { margin: var(--space-xs) 0 0; font-weight: 600; }
 .tile .meta { margin: var(--space-2xs) 0 0; }
 @media (min-width: 40rem) {
@@ -195,7 +202,7 @@ a { color: var(--brand); }
 
 /* Things to ask: quoted, not chips, since nothing here is tapped. */
 .asks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-xs); }
-.asks li { padding-left: var(--space-md); border-left: 2px solid var(--brand); }
+.asks li { padding-left: var(--space-md); border-left: 2px solid var(--action); }
 .asks li::before { content: "\201C"; }
 .asks li::after { content: "\201D"; }
 
@@ -250,28 +257,31 @@ input[type="text"], input[type="email"], input[type="password"], textarea {
   font: inherit;
 }
 .button {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: 44px;
   padding: var(--space-sm) var(--space-lg);
   border: 0;
   border-radius: var(--radius-control);
-  background: var(--brand);
-  color: var(--brand-text);
+  background: var(--action);
+  color: var(--action-text);
   font: inherit;
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
 }
-.button--quiet { background: transparent; color: var(--brand); padding-inline: var(--space-sm); }
+.button--quiet { background: transparent; color: var(--action); padding-inline: var(--space-sm); }
 .button--block { display: flex; align-items: center; justify-content: center; width: 100%; }
 .button--accent { background: var(--accent); color: var(--brand); }
-.button--secondary { background: transparent; color: var(--brand); box-shadow: inset 0 0 0 2px var(--brand); }
+.button--secondary { background: transparent; color: var(--action); box-shadow: inset 0 0 0 2px var(--action); }
+.button--danger { background: transparent; color: var(--error); box-shadow: inset 0 0 0 2px var(--error); }
 .button:disabled { opacity: 0.6; cursor: progress; }
 /* mcp_auth's pages (templates/mcp_auth/): its buttons carry no classes, so style them here */
-.mcp-auth form button { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 44px; margin-top: var(--space-sm); padding: var(--space-sm) var(--space-lg); border: 0; border-radius: var(--radius-control); background: var(--brand); color: var(--brand-text); font: inherit; font-weight: 600; cursor: pointer; }
-.mcp-auth .mcp-auth-cancel { background: transparent; color: var(--brand); box-shadow: inset 0 0 0 2px var(--brand); }
+.mcp-auth form button { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 44px; margin-top: var(--space-sm); padding: var(--space-sm) var(--space-lg); border: 0; border-radius: var(--radius-control); background: var(--action); color: var(--action-text); font: inherit; font-weight: 600; cursor: pointer; }
+.mcp-auth .mcp-auth-cancel { background: transparent; color: var(--action); box-shadow: inset 0 0 0 2px var(--action); }
 .mcp-auth .mcp-auth-account p { color: var(--text-2); font-size: var(--type-sm); }
-.mcp-auth .mcp-auth-account button { display: inline; width: auto; margin: 0; padding: 0; background: none; color: var(--brand); font-weight: inherit; text-decoration: underline; }
+.mcp-auth .mcp-auth-account button { display: inline; width: auto; margin: 0; padding: 0; background: none; color: var(--action); font-weight: inherit; text-decoration: underline; }
 .input--code { max-width: 12rem; font-size: var(--type-2xl); letter-spacing: 0.3em; font-variant-numeric: tabular-nums; }
 /* The sign-in code as six boxes, one digit each (static/js/code_input.js) */
 .code-boxes { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--space-sm); max-width: 24rem; }
@@ -281,11 +291,130 @@ input.code-box {
   font-size: var(--type-2xl);
   font-variant-numeric: tabular-nums;
   text-align: center;
-  caret-color: var(--brand);
+  caret-color: var(--action);
 }
-input.code-box:focus { border-color: var(--brand); outline: 2px solid var(--brand); outline-offset: -1px; }
+input.code-box:focus { border-color: var(--action); outline: 2px solid var(--action); outline-offset: -1px; }
 .errorlist { color: var(--error); padding-left: var(--space-2xl); margin: var(--space-xs) 0 0; }
 .form-error { color: var(--error); margin: 0; }
+
+/* The display and its boards (apps/boards). The board itself is drawn by preview.css. */
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: 44px;
+  color: var(--text-2);
+  font-weight: 600;
+  text-decoration: none;
+}
+.back-link svg { width: 16px; height: 16px; }
+
+/* Two columns on a wide screen: the main thing, and what goes beside it. */
+.split { display: grid; gap: var(--space-lg); }
+@media (min-width: 56rem) {
+  .split { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); align-items: start; }
+}
+
+/* A row of choices with one current (links, or pressed buttons). */
+.segmented {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+  width: fit-content;
+  max-width: 100%;
+  padding: var(--space-2xs);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--bg);
+}
+.segmented__option {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--space-md);
+  border-radius: var(--radius-control);
+  color: var(--text-2);
+  font-weight: 600;
+  text-decoration: none;
+}
+.segmented__option[aria-current="true"] { background: var(--card); color: var(--text-1); box-shadow: inset 0 0 0 1px var(--border); }
+
+/* A square button with only an icon; its name is in aria-label. */
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--card);
+  color: var(--text-1);
+  cursor: pointer;
+}
+.icon-button svg { width: 18px; height: 18px; }
+.icon-button:disabled { opacity: 0.4; cursor: default; }
+
+/* Buttons side by side, wrapping on a phone. */
+.button-row { display: flex; flex-wrap: wrap; gap: var(--space-sm); margin: 0; }
+
+/* A text field and its button on one line, wrapping on a phone. */
+.inline-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-sm); margin: 0; }
+.inline-form .field { flex: 1 1 14rem; }
+
+/* The board page's edit panel: the message box and the palette beside it. */
+.editor__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: 44px;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+.editor__toggle::-webkit-details-marker { display: none; }
+.editor__toggle svg { width: 16px; height: 16px; }
+.editor[open] .editor__toggle svg { transform: rotate(180deg); }
+.editor__body { display: flex; flex-wrap: wrap; gap: var(--space-2xl); margin-top: var(--space-md); }
+.editor__text { flex: 1 1 22rem; max-width: 29rem; }
+.editor__counts {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin: var(--space-xs) 0 0;
+  color: var(--text-2);
+  font-size: var(--type-sm);
+}
+.editor__count--over { color: var(--error); font-weight: 600; }
+.editor__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+  margin-top: var(--space-lg);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--border);
+}
+
+/* Colour tiles and pictograms, each a key that adds its code to the message. */
+.palette { flex: 1 1 16rem; }
+.palette__keys { display: grid; grid-template-columns: repeat(auto-fill, 44px); gap: var(--space-xs); margin-top: var(--space-xs); }
+.palette__key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--card);
+  color: var(--text-1);
+  cursor: pointer;
+}
+.palette__key svg { width: 20px; height: 20px; }
 
 /* Lists of things with an action on each row (passkeys) */
 
@@ -294,6 +423,12 @@ input.code-box:focus { border-color: var(--brand); outline: 2px solid var(--bran
 .item + .item { border-top: 1px solid var(--border); }
 .item__title { margin: 0; font-weight: 600; }
 .item .meta { margin: var(--space-2xs) 0 0; }
+/* A row that opens a page, with its own actions beside it. */
+.item__main { flex: 1; min-width: 0; color: inherit; text-decoration: none; }
+.item__main > * { display: block; }
+.item__main .meta { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.item__actions { display: flex; gap: var(--space-xs); }
+.item__actions form { margin: 0; }
 
 /* Notes */
 
