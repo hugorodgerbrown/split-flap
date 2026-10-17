@@ -138,7 +138,7 @@ body.idle { cursor: none; }
   position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px));
   transform: translateX(-50%);
   display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: center;
-  max-width: calc(100% - 32px); box-sizing: border-box;
+  width: max-content; max-width: calc(100% - 32px); box-sizing: border-box;
   padding: 6px; border-radius: 14px;
   background: var(--ui-bg); border: 1px solid var(--ui-line);
   backdrop-filter: blur(10px);
@@ -228,6 +228,8 @@ body.idle { cursor: none; }
   <span class="tag">Sample content</span>
   <div class="tabs" role="tablist" id="tabs"></div>
   <span class="sep"></span>
+  <div class="tabs" role="radiogroup" aria-label="Flip speed" id="speed" title="Flip speed (− and +)"></div>
+  <span class="sep"></span>
   <button id="cycle" type="button" aria-pressed="true" title="Cycle boards (Space)"><span class="dot"></span><span class="label-opt">Auto-cycle</span><span class="label-short" hidden>Auto</span></button>
   <button id="sound" type="button" aria-pressed="false" title="Flap sound (S)"><span class="dot"></span>Sound</button>
   <button id="write" type="button" title="Write a message (W)">
@@ -242,6 +244,10 @@ body.idle { cursor: none; }
 (() => {
   const COLS = 22, ROWS = 6;
   const CYCLE_MS = 30000;
+  // Flip speed presets: each multiplies flap timing and the cascade delay.
+  const SPEEDS = [{ name: 'Slow', k: 1.8 }, { name: 'Normal', k: 1 }, { name: 'Fast', k: 0.5 }];
+  let speed = 1;
+  try { const v = +localStorage.getItem('splitflap.speed'); if (SPEEDS[v]) speed = v; } catch (e) {}
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // The drum: every symbol a flap can show, in the order it turns through them.
@@ -467,7 +473,7 @@ body.idle { cursor: none; }
     }
     // Fire-and-forget animations paced by a timer, so fast spins are not held back by frame timing.
     flip(next, pace = 1) {
-      const d = this.ms * pace;
+      const d = this.ms * pace * SPEEDS[speed].k;
       this.a1?.cancel(); this.a2?.cancel();
       setFace(this.sTop, next);
       setFace(this.sBot, this.cur);
@@ -500,7 +506,7 @@ body.idle { cursor: none; }
     shown = key;
     rows.forEach((syms, r) => syms.forEach((sym, c) => {
       // A left-to-right wave with a little scatter.
-      cells[r * COLS + c].set(sym, c * 32 + r * 14 + Math.random() * 70);
+      cells[r * COLS + c].set(sym, (c * 32 + r * 14 + Math.random() * 70) * SPEEDS[speed].k);
     }));
   }
 
@@ -634,6 +640,23 @@ body.idle { cursor: none; }
     select(0);
   }
 
+  const speedGroup = document.getElementById('speed');
+  SPEEDS.forEach((sp, i) => {
+    const btn = document.createElement('button');
+    btn.type = 'button'; btn.role = 'radio'; btn.textContent = sp.name;
+    btn.addEventListener('click', () => setSpeed(i));
+    speedGroup.appendChild(btn);
+  });
+  function setSpeed(i) {
+    speed = Math.max(0, Math.min(SPEEDS.length - 1, i));
+    [...speedGroup.children].forEach((b, j) => {
+      b.setAttribute('aria-checked', j === speed);
+      b.setAttribute('aria-selected', j === speed);
+    });
+    try { localStorage.setItem('splitflap.speed', speed); } catch (e) {}
+  }
+  setSpeed(speed);
+
   cycleBtn.addEventListener('click', () => setAuto(!auto));
   soundBtn.addEventListener('click', toggleSound);
   document.getElementById('fs').addEventListener('click', toggleFs);
@@ -654,6 +677,8 @@ body.idle { cursor: none; }
     else if (/^[1-9]$/.test(k) && +k <= BOARDS.length) select(+k - 1);
     else if (k === ' ') { e.preventDefault(); setAuto(!auto); }
     else if (k === 's') toggleSound();
+    else if (k === '-' || k === '_') setSpeed(speed - 1);
+    else if (k === '=' || k === '+') setSpeed(speed + 1);
     else if (k === 'f') toggleFs();
     else if (k === 'w') { e.preventDefault(); openCompose(); }
     else if (k === 'escape') closeCompose();
