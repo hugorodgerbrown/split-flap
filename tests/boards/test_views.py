@@ -414,3 +414,26 @@ def test_tv_page_carries_the_sound_timing_and_replays(client: Client, user: Any)
     replay(display)
     content = client.get(reverse("tv:board", args=[display.uuid])).content
     assert b'data-sound-delay="200" data-replays="1"' in content
+
+
+def test_display_controls_update_in_place(signed_in: Client, user: Any) -> None:
+    """With htmx, each control posts and swaps its own card, so the page doesn't jump."""
+    set_sound(display_for(user), True)
+    content = signed_in.get(reverse("boards:manage")).content.decode()
+    assert 'id="display-controls"' in content
+    assert 'hx-select="#display-controls" hx-swap="outerHTML"' in content
+    for name in ("boards:sound", "boards:sound_delay", "boards:replay"):
+        assert f'hx-post="{reverse(name)}"' in content
+
+
+@pytest.mark.django_db
+def test_display_controls_send_a_signed_out_htmx_post_to_sign_in(client: Client) -> None:
+    """A control posted after the session ends loads sign-in, rather than emptying the card."""
+    sign_in = f"{reverse('accounts:sign_in')}?next={reverse('boards:manage')}"
+    for name in ("boards:sound", "boards:sound_delay", "boards:replay"):
+        response = client.post(reverse(name), headers={"HX-Request": "true"})
+        assert response.status_code == 204
+        assert response["HX-Redirect"] == sign_in
+        plain = client.post(reverse(name))
+        assert plain.status_code == 302
+        assert plain["Location"] == sign_in

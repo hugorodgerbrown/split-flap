@@ -8,9 +8,13 @@ and every change to them is a plain form post, so they work without script.
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from functools import wraps
+from typing import Any
 from uuid import UUID
 
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.views import redirect_to_login
 from django.http import HttpRequest, HttpResponse, HttpResponseNotModified, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.templatetags.static import static
@@ -145,6 +149,26 @@ def _manage(request: HttpRequest, form: BoardNameForm, status: int = 200) -> Htt
     )
 
 
+def _controls_login_required(view: Callable[..., HttpResponse]) -> Callable[..., HttpResponse]:
+    """Like ``login_required``, but sends a signed-out htmx post to sign-in.
+
+    The display controls swap their card from the response. Followed as a
+    redirect, the sign-in page has no card, so the swap would empty it; an
+    ``HX-Redirect`` makes htmx load the sign-in page instead.
+    """
+
+    @wraps(view)
+    def wrapper(request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
+        if request.user.is_authenticated:
+            return view(request, *args, **kwargs)
+        sign_in = redirect_to_login(reverse("boards:manage"))
+        if request.headers.get("HX-Request") != "true":
+            return sign_in
+        return HttpResponse(status=204, headers={"HX-Redirect": sign_in["Location"]})
+
+    return wrapper
+
+
 @require_GET
 @login_required
 def display_manage(request: HttpRequest) -> HttpResponse:
@@ -154,7 +178,7 @@ def display_manage(request: HttpRequest) -> HttpResponse:
 
 
 @require_POST
-@login_required
+@_controls_login_required
 def display_sound(request: HttpRequest) -> HttpResponse:
     """Turn the display's flap sound on or off."""
     display = display_for(signed_in_user(request))
@@ -165,7 +189,7 @@ def display_sound(request: HttpRequest) -> HttpResponse:
 
 
 @require_POST
-@login_required
+@_controls_login_required
 def display_sound_delay(request: HttpRequest) -> HttpResponse:
     """Set how long the display holds its flaps back for the sound."""
     display = display_for(signed_in_user(request))
@@ -176,7 +200,7 @@ def display_sound_delay(request: HttpRequest) -> HttpResponse:
 
 
 @require_POST
-@login_required
+@_controls_login_required
 def display_replay(request: HttpRequest) -> HttpResponse:
     """Have the display flip its board again, without changing the message."""
     replay(display_for(signed_in_user(request)))

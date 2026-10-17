@@ -223,6 +223,24 @@ describe('the flaps and their clacks', () => {
     expect(gap()).toBeGreaterThan(400);
   });
 
+  // What the tiles show, row after row, without the blanks: each tile's upper half.
+  const shows = () => [...document.querySelectorAll('#grid .cell')]
+    .map(c => c.querySelector('.half.top .face').textContent || ' ').join('').trim().replace(/ +/g, ' ');
+
+  it('lands on the message even when the reported delay keeps moving', async () => {
+    FakeAudioContext.allowed = true;
+    await load(true, { motion: true, attrs: 'data-replays="0"' });
+    // A browser whose reported output delay jumps between reads, as Android's can.
+    let reads = 0;
+    Object.defineProperty(FakeAudioContext.made.at(-1), 'outputLatency', { get: () => ((reads++ % 2) ? 0.02 : 0.25) });
+    await post('HI HUGO');
+    expect(shows()).toBe('HI HUGO');
+    state = { ...state, replays: 1 };
+    await poll();
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(shows()).toBe('HI HUGO');
+  });
+
   it('flips the board again when Replay is pressed, and not otherwise', async () => {
     await load(false, { motion: true, attrs: 'data-replays="0"' });
     await post('HELLO');

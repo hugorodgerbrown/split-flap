@@ -96,7 +96,10 @@
       this.running = false;
       // Each module's motor runs at a slightly different speed, like the real thing.
       this.motor = Math.random();
+      // Flaps are numbered as they're played; only a newer one may be drawn over an older one.
+      this.played = 0;
       this.drawn = 0;
+      this.lag = 0;
       [this.sTop, this.sBot, this.lTop, this.lBot].forEach(h => setFace(h, ' '));
     }
     set(sym, delay) {
@@ -107,6 +110,8 @@
     }
     async run() {
       this.start = null;
+      // One delay for the whole turn: re-reading it per flap could draw a later flap before an earlier one.
+      this.lag = this.board.hooks.lagMs();
       while (this.cur !== this.target) {
         if (this.board.still()) { this.snap(this.target); break; }
         await this.flip(nextFlap(this.cur, this.target));
@@ -114,7 +119,7 @@
       this.running = false;
     }
     snap(sym) {
-      this.drawn++;  // drop any flap still waiting to be drawn
+      this.drawn = this.played;  // drop any flap still waiting to be drawn
       // Drop a start still waiting, so the next show() schedules it afresh.
       if (this.start) { clearTimeout(this.start); this.start = null; this.running = false; }
       this.a1?.cancel(); this.a2?.cancel();
@@ -124,12 +129,13 @@
     // Fire-and-forget animations paced by a timer, so quick flaps are not held back by frame timing.
     // The clack is played on time and the flap drawn lagMs() later, so they're heard and seen together.
     flip(next) {
-      const { clack, lagMs, speed } = this.board.hooks;
+      const { clack, speed } = this.board.hooks;
       const d = (TUNING.flapMs + this.motor * TUNING.flapSpreadMs) * speed();
       const top = TUNING.topShare;
-      const prev = this.cur, drawn = this.drawn;
+      const prev = this.cur, n = ++this.played;
       const draw = () => {
-        if (drawn !== this.drawn) return;
+        if (n <= this.drawn) return;
+        this.drawn = n;
         this.a1?.cancel(); this.a2?.cancel();
         setFace(this.sTop, next);
         setFace(this.sBot, prev);
@@ -138,8 +144,7 @@
         this.a1 = this.lTop.animate(TOP_FALL, { duration: d * top, easing: 'cubic-bezier(.55,0,1,.45)', fill: 'forwards' });
         this.a2 = this.lBot.animate(bottomFall(), { duration: d * (1 - top), delay: d * top, fill: 'both' });
       };
-      const lag = lagMs();
-      if (lag > 0) setTimeout(draw, lag); else draw();
+      if (this.lag > 0) setTimeout(draw, this.lag); else draw();
       setTimeout(clack, d * 0.65);
       this.cur = next;
       return new Promise(r => setTimeout(r, d));
