@@ -169,19 +169,21 @@ def _manage(
     )
 
 
-def _controls_login_required(view: Callable[..., HttpResponse]) -> Callable[..., HttpResponse]:
-    """Like ``login_required``, but sends a signed-out htmx post to sign-in.
+def _htmx_login_required(view: Callable[..., HttpResponse]) -> Callable[..., HttpResponse]:
+    """Like ``login_required``, but sends a signed-out htmx request to sign-in.
 
-    The display controls swap their card from the response. Followed as a
-    redirect, the sign-in page has no card, so the swap would empty it; an
-    ``HX-Redirect`` makes htmx load the sign-in page instead.
+    The display page swaps parts of itself from the response: the controls,
+    or the board, editor and list when you pick a board or Save. Followed as
+    a redirect, the sign-in page has none of them, so the swap would empty
+    them; an ``HX-Redirect`` makes htmx load the sign-in page instead.
     """
 
     @wraps(view)
     def wrapper(request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
         if request.user.is_authenticated:
             return view(request, *args, **kwargs)
-        sign_in = redirect_to_login(reverse("boards:manage"))
+        back = request.get_full_path() if request.method == "GET" else reverse("boards:manage")
+        sign_in = redirect_to_login(back)
         if request.headers.get("HX-Request") != "true":
             return sign_in
         return HttpResponse(status=204, headers={"HX-Redirect": sign_in["Location"]})
@@ -190,14 +192,14 @@ def _controls_login_required(view: Callable[..., HttpResponse]) -> Callable[...,
 
 
 @require_GET
-@login_required
+@_htmx_login_required
 def display_manage(request: HttpRequest) -> HttpResponse:
     """The display page: the selected board and its editor, the display's links, and its boards."""
     return _manage(request, display_for(signed_in_user(request)))
 
 
 @require_POST
-@_controls_login_required
+@_htmx_login_required
 def display_sound(request: HttpRequest) -> HttpResponse:
     """Turn the display's flap sound on or off."""
     display = display_for(signed_in_user(request))
@@ -208,7 +210,7 @@ def display_sound(request: HttpRequest) -> HttpResponse:
 
 
 @require_POST
-@_controls_login_required
+@_htmx_login_required
 def display_sound_delay(request: HttpRequest) -> HttpResponse:
     """Set how long the display holds its flaps back for the sound."""
     display = display_for(signed_in_user(request))
@@ -219,7 +221,7 @@ def display_sound_delay(request: HttpRequest) -> HttpResponse:
 
 
 @require_POST
-@_controls_login_required
+@_htmx_login_required
 def display_replay(request: HttpRequest) -> HttpResponse:
     """Have the display flip its board again, without changing the message."""
     replay(display_for(signed_in_user(request)))
@@ -250,7 +252,7 @@ def board_detail(request: HttpRequest, board_uuid: UUID) -> HttpResponse:
 
 
 @require_POST
-@login_required
+@_htmx_login_required
 def board_message(request: HttpRequest, board_uuid: UUID) -> HttpResponse:
     """Put a new message on a board, or clear it."""
     board = _board(request, board_uuid)

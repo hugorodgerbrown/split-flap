@@ -2,6 +2,7 @@
 
 import uuid
 from typing import Any
+from urllib.parse import quote
 
 import pytest
 from django.test import Client
@@ -439,3 +440,17 @@ def test_display_controls_send_a_signed_out_htmx_post_to_sign_in(client: Client)
         plain = client.post(reverse(name))
         assert plain.status_code == 302
         assert plain["Location"] == sign_in
+
+
+@pytest.mark.django_db
+def test_picking_a_board_or_saving_signed_out_loads_sign_in(client: Client) -> None:
+    """Picking a board or saving once signed out loads sign-in, not an emptied page."""
+    board = BoardFactory.create()
+    manage = f"{reverse('boards:manage')}?board={board.uuid}"
+    response = client.get(manage, headers={"HX-Request": "true"})
+    assert response.status_code == 204
+    assert response["HX-Redirect"] == f"{reverse('accounts:sign_in')}?next={quote(manage)}"
+    assert client.get(manage)["Location"] == response["HX-Redirect"]
+    save = client.post(reverse("boards:message", args=[board.uuid]), headers={"HX-Request": "true"})
+    assert save.status_code == 204
+    assert save["HX-Redirect"] == f"{reverse('accounts:sign_in')}?next={reverse('boards:manage')}"
