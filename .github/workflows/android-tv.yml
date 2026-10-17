@@ -117,8 +117,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ needs.build.outputs.version }}
         run: |
-          tagged=$(gh api "repos/$GITHUB_REPOSITORY/commits/tv-v$VERSION" --jq .sha 2>/dev/null || true)
-          if [[ -n "$tagged" && "$tagged" != "$GITHUB_SHA" ]]; then
+          # gh api fails (and prints its error, not a SHA) when there is no such tag.
+          if tagged=$(gh api "repos/$GITHUB_REPOSITORY/commits/tv-v$VERSION" --jq .sha 2>/dev/null) \
+            && [[ "$tagged" != "$GITHUB_SHA" ]]; then
             echo "::error::tv-v$VERSION already tags another commit ($tagged); pick a new version."
             exit 1
           fi
