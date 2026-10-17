@@ -20,12 +20,12 @@ class TestMCPAuth(MCPAuthContract):
     mcp_path = "/mcp"
 
     def make_allowed_user(self, django_user_model: Any) -> Any:
-        """A user who may connect: staff and superuser satisfy either policy."""
-        return UserFactory.create(is_staff=True, is_superuser=True)
+        """Any active account may connect, staff or not."""
+        return UserFactory.create()
 
     def make_refused_user(self, django_user_model: Any) -> Any:
-        """A signed-in user who may not connect."""
-        return UserFactory.create()
+        """Under every_account the only refused account is an inactive one."""
+        return UserFactory.create(is_active=False)
 
 
 @pytest.fixture
@@ -166,8 +166,8 @@ def test_add_note_validates() -> None:
 
 
 def call_endpoint(client: Client, body: Any, headers: dict[str, str] | None = None) -> Any:
-    """POST ``body`` to /mcp with a valid bearer token for a staff user."""
-    token = TestMCPAuth().token_for(UserFactory.create(is_staff=True))
+    """POST ``body`` to /mcp with a valid bearer token for an ordinary user."""
+    token = TestMCPAuth().token_for(UserFactory.create())
     return client.post(
         "/mcp",
         body if isinstance(body, str) else json.dumps(body),
@@ -239,6 +239,17 @@ def test_staff_only_policy() -> None:
     assert not staff_only(SimpleNamespace(is_active=False, is_staff=True))
 
 
+def test_every_account_policy_is_the_one_in_use(settings: Any) -> None:
+    """Any active account may connect, and that is the rule the project uses."""
+    from types import SimpleNamespace
+
+    from apps.mcp.policy import every_account
+
+    assert settings.MCP_AUTH["CAN_CONNECT"] == "apps.mcp.policy.every_account"
+    assert every_account(SimpleNamespace(is_active=True, is_staff=False))
+    assert not every_account(SimpleNamespace(is_active=False, is_staff=True))
+
+
 @pytest.mark.django_db
 def test_endpoint_refuses_anonymous_calls(client: Client) -> None:
     """No bearer token, no tools: a 401 that starts OAuth discovery."""
@@ -260,3 +271,39 @@ def test_the_openai_apps_challenge(client: Client, settings: Any) -> None:
     assert response.status_code == 200
     assert response.content == b"token-123"
     assert response["Content-Type"] == "text/plain; charset=utf-8"
+
+
+def call_tool_as(client: Client, user: Any, name: str, arguments: dict[str, Any]) -> Any:
+    """Call one tool over HTTP with a bearer token for ``user``; return its result."""
+    token = TestMCPAuth().token_for(user)
+    body = {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "tools/call",
+        "params": {"name": name, "arguments": arguments},
+    }
+    response = client.post(
+        "/mcp",
+        json.dumps(body),
+        content_type="application/json",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200, response.content
+    return response.json()["result"]
+
+
+@pytest.mark.django_db
+def test_people_only_reach_their_own_boards(client: Client) -> None:
+    """Two ordinary accounts connected at once each post to and read only their own boards."""
+    from apps.boards.services import display_for
+
+    alice, bob = UserFactory.create(), UserFactory.create()
+    call_tool_as(client, alice, "post_message", {"text": "From Alice"})
+    call_tool_as(client, bob, "post_message", {"text": "From Bob"})
+    alice_boards = call_tool_as(client, alice, "list_boards", {})["structuredContent"]
+    bob_board = call_tool_as(client, bob, "get_board", {})["structuredContent"]
+    alice_messages = [b["message"] for b in alice_boards["boards"]]
+    assert alice_messages[0] == "From Alice"
+    assert "From Bob" not in alice_messages
+    assert bob_board["message"] == "From Bob"
+    assert display_for(alice) != display_for(bob)

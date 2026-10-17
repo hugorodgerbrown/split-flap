@@ -23,7 +23,7 @@ What is on by default, and what checks it.
 | Known CVEs in runtime Python deps and npm packages | pip-audit, npm audit | `tox -e audit` (CI and weekly) |
 | Secrets in commits | gitleaks | pre-commit and CI |
 | Dependency updates | Dependabot (uv, npm, actions) | weekly PRs |
-| MCP: OAuth 2.1, PKCE, audience-bound tokens, staff-only by default | `mcp-auth` | `tests/mcp/test_mcp.py` (the shared contract) |
+| MCP: OAuth 2.1, PKCE, audience-bound tokens, every active account (docs/decisions/every-account-may-connect-claude.md) | `mcp-auth` | `tests/mcp/test_mcp.py` (the shared contract) |
 | MCP App views: self-contained, no network, data drawn as text only | `apps/mcp/resources.py`, `apps/mcp/ui/` | `tests/mcp/test_mcp.py`, `tests/js/mcp/` |
 
 ## Invariants

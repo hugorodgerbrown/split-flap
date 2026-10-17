@@ -94,7 +94,7 @@ By hand instead:
 ## Connect Claude
 
 Add `https://<your host>/mcp` as a custom connector in Claude. Who may
-connect is `apps/mcp/policy.py` (staff only to start); the consent page
+connect is `apps/mcp/policy.py` (every active account); the consent page
 signs people in through the normal email sign-in and names the account
 by its masked address. For a local token:
 

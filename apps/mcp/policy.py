@@ -1,8 +1,11 @@
 """Who may connect an MCP client to this project (MCP_AUTH["CAN_CONNECT"]).
 
-Staff only to start with: an MCP client acts with the user's full access,
-so widen this deliberately, as a product decision. It runs on the consent
-page and on every call, so revoking staff status cuts a user's clients off.
+An MCP client acts with the user's full access, so widening this is a
+product decision. Split-Flap uses every_account: connecting Claude is how
+a person's Routines post to their boards
+(docs/decisions/every-account-may-connect-claude.md). The rule runs on the
+consent page and on every call, so turning an account off cuts its
+clients off. staff_only is the template's default, kept for the template.
 """
 
 from typing import Any
@@ -11,3 +14,8 @@ from typing import Any
 def staff_only(user: Any) -> bool:
     """An active staff member may connect."""
     return bool(user.is_active and user.is_staff)
+
+
+def every_account(user: Any) -> bool:
+    """Any active account may connect; each reaches only its own data."""
+    return bool(user.is_active)
