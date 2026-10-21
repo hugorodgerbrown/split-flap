@@ -9,4 +9,5 @@ app_name = "design"
 urlpatterns = [
     path("design/", views.design, name="index"),
     path("design/board/", views.board_tuning, name="board"),
+    path("design/errors/<str:kind>/", views.error_preview, name="error_preview"),
 ]

@@ -24,9 +24,7 @@ def draw(size: int, letter: str, colour: str, *, maskable: bool) -> Image.Image:
         ImageDraw.Draw(mask).rounded_rectangle((0, 0, size, size), radius=size // 5, fill=255)
         image.putalpha(mask)
     font = ImageFont.load_default(size=int(size * (0.42 if maskable else 0.55)))
-    ImageDraw.Draw(image).text(
-        (size / 2, size / 2), letter, fill="#ffffff", font=font, anchor="mm"
-    )
+    ImageDraw.Draw(image).text((size / 2, size / 2), letter, fill="#ffffff", font=font, anchor="mm")
     return image
 
 
