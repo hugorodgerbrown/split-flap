@@ -4,7 +4,8 @@ The design page shows every token and every component state drawn by
 app.css. The board tuning page (boards/tuning.html, as it draws the board
 with board.css) tunes the board's motion by eye. They are for the people
 building the app, so only staff see them; anyone else gets a 404, as if
-they weren't there.
+they weren't there. The same goes for the design page's previews of the
+error pages (apps/core/errors.py).
 """
 
 import json
@@ -15,6 +16,7 @@ from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_GET
 
+from apps.core import errors
 from apps.design import stylesheet
 from apps.public.board import DEMO_BOARDS, lay_out
 
@@ -33,7 +35,8 @@ def design(request: HttpRequest) -> HttpResponse:
     families = {
         family: [t for t in found.values() if t.family == family] for family in FAMILY_ORDER
     }
-    return render(request, "design/index.html", {"families": families})
+    context = {"families": families, "error_pages": errors.ERROR_PAGES}
+    return render(request, "design/index.html", context)
 
 
 # The tuning page's sliders: (TUNING key in static/js/flapmotion.js, label,
@@ -70,3 +73,17 @@ def board_tuning(request: HttpRequest) -> HttpResponse:
         "boards/tuning.html",
         {"sliders": TUNING_SLIDERS, "boards": boards, "boards_json": json.dumps(boards)},
     )
+
+
+@require_GET
+@login_required
+def error_preview(request: HttpRequest, kind: str) -> HttpResponse:
+    """One error page exactly as it is sent, with its real status.
+
+    With ``DEBUG`` on Django shows its technical pages instead of these, so
+    this is how to see them. It goes through the same negotiation:
+    ``Accept: application/json`` or ``HX-Request: true`` preview those shapes.
+    """
+    if not request.user.is_staff or kind not in errors.ERROR_PAGES:
+        raise Http404
+    return errors.error_response(request, kind)

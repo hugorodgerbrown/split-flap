@@ -35,5 +35,5 @@ What is on by default, and what checks it.
 4. Every fragment view is `@require_htmx`; every outbox endpoint is
    `@login_required_json`.
 5. A sign-in secret (link token, code) is never stored or logged as given.
-6. Widening who may connect an MCP client (`apps/mcp/policy.py`) is a
-   product decision, made in a PR that says so.
+6. Changing who may connect an MCP client (`MCP_AUTH["CAN_CONNECT"]` in
+   `config/settings.py`) is a product decision, made in a PR that says so.

@@ -14,11 +14,12 @@ have a live board.
 ## Decision
 
 `MCP_AUTH["CAN_CONNECT"]` is `apps.mcp.policy.every_account`: any active
-account may connect a client. It is set in `config/settings.py` rather
+account may connect a client. It was set in `config/settings.py` rather
 than through the template's `mcp_can_connect` question, whose choices
-stop at staff and superusers. `.copier-answers.yml` keeps the template's
-default, so `copier update` keeps merging cleanly. If the template
-updates that settings line, keep this value.
+then stopped at staff and superusers. Since RAS-88 the template offers
+"any active account" (`mcp_auth.policy.active_user`, the same rule) and
+makes it the default, so `.copier-answers.yml` records that answer. If
+the template updates that settings line, keep this value.
 
 ## Consequences
 

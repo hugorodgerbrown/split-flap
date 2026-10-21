@@ -41,7 +41,6 @@ COLOURS = 128
 STRIPE = ("#d8372f", "#ee7a1f", "#f5c22b", "#2f9d5b", "#2069cf", "#7a4bc8")
 
 
-
 def font(name: str) -> str:
     """Return a font file as a data: URL, as a page drawn from a string can't read files."""
     data = base64.b64encode((FONTS / name).read_bytes()).decode()

@@ -97,4 +97,3 @@ page). The page has a live board, a slider for each number, a choice of
 boards to change between, and Replay. The sliders change the numbers on
 that page only, and nothing is saved. When it looks right, copy the
 values from the page over `DEFAULTS` and commit them.
-
