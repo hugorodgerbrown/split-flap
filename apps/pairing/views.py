@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponse, JsonResponse
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
@@ -17,6 +17,7 @@ from django.views.decorators.http import require_GET, require_http_methods, requ
 from apps.boards.services import display_for
 from apps.core.decorators import signed_in_user
 from apps.core.ratelimit import client_ip, over_limit
+from apps.core.shortcuts import render
 from apps.pairing import services
 from apps.pairing.forms import PairForm
 
