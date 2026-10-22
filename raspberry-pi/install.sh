@@ -54,8 +54,9 @@ loginctl enable-linger "$KIOSK_USER"
 
 say "Installing the kiosk"
 install -d -m 755 /opt/riffle /etc/riffle
-here="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || true)"
-if [[ -n "$here" && -f "$here/riffle_kiosk.py" ]]; then
+# From a checkout, install the kiosk beside this script; piped from curl, fetch it.
+here="$(dirname "${BASH_SOURCE[0]:-$0}")"
+if [[ -f "$here/riffle_kiosk.py" ]]; then
   install -m 644 "$here/riffle_kiosk.py" /opt/riffle/riffle_kiosk.py
 else
   curl -fsSL "$RAW/riffle_kiosk.py" -o /opt/riffle/riffle_kiosk.py
