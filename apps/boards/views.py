@@ -17,7 +17,7 @@ from uuid import UUID
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import redirect_to_login
 from django.http import HttpRequest, HttpResponse, HttpResponseNotModified, JsonResponse
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import get_object_or_404, redirect
 from django.templatetags.static import static
 from django.urls import reverse
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
@@ -43,6 +43,7 @@ from apps.boards.services import (
     set_sound_delay,
 )
 from apps.core.decorators import signed_in_user
+from apps.core.shortcuts import render
 from apps.public.connector import mcp_url
 
 # How often the TV asks for new content, in seconds.
