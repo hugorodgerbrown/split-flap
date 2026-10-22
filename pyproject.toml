@@ -71,6 +71,8 @@ filterwarnings = ["ignore:No directory at:UserWarning"]
 target-version = "py314"
 line-length = 100
 extend-exclude = ["*/migrations/*"]
+# The Pi kiosk runs on the Python Raspberry Pi OS ships, not ours (docs/raspberry-pi.md).
+per-file-target-version = { "raspberry-pi/*.py" = "py311" }
 
 [tool.ruff.lint]
 select = [
