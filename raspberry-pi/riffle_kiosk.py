@@ -48,8 +48,9 @@ TIMEOUT_SECONDS = 10
 FIRST_RETRY_SECONDS = 5.0
 MAX_RETRY_SECONDS = 60.0
 RATE_LIMITED_RETRY_SECONDS = 60.0
-# Once the board is showing there is nothing to do until the start page loads again.
-IDLE_SECONDS = 3600.0
+# While the board is showing, how often to check its display still exists. The
+# board page polls by itself, but never leaves a deleted display.
+RECHECK_SECONDS = 300.0
 
 DISPLAY_PATH = re.compile(r"^/d/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/$")
 
@@ -291,10 +292,12 @@ class Kiosk:
         api: Api,
         store: Store,
         qr: Callable[[str], str] = qr_svg,
+        leave_board: Callable[[], None] = lambda: None,
     ) -> None:
         self.api = api
         self.store = store
         self._qr = qr
+        self._leave_board = leave_board
         self._lock = threading.Lock()
         self._wake = threading.Event()
         self._state: dict[str, Any] = {"state": "starting"}
@@ -342,18 +345,23 @@ class Kiosk:
             logger.warning("Forgetting a display link that isn't on %s", self.api.server)
             self.store.clear()
             return 0
-        if self.state.get("state") == "ready":
-            return IDLE_SECONDS
+        showing = self.state.get("state") == "ready"
         result = self.api.check(display.display_url)
         if result == "ok":
             self._retry = FIRST_RETRY_SECONDS
             self._show("ready", display_url=display.display_url, display_name=display.display_name)
-            return IDLE_SECONDS
+            return RECHECK_SECONDS
         if result == "gone":
             logger.info("The display was deleted; pairing again")
             self.store.clear()
             self._show("starting")
+            if showing:
+                # The browser is on the deleted board: send it back to the start page.
+                self._leave_board()
             return 0
+        if showing:
+            # The board rides out an outage by itself; check again later.
+            return RECHECK_SECONDS
         self._show("offline")
         return self._backoff()
 
@@ -557,9 +565,19 @@ def make_handler(kiosk: Kiosk) -> type[BaseHTTPRequestHandler]:
 # --- Commands ----------------------------------------------------------------
 
 
+def restart_browser() -> None:
+    """Close the browser's compositor; systemd starts it again on the start page."""
+    pkill = shutil.which("pkill")
+    if pkill is None:
+        return
+    subprocess.run(  # noqa: S603  # nosemgrep (fixed arguments)
+        [pkill, "-x", "-u", str(os.getuid()), "cage"], check=False
+    )
+
+
 def serve(server: str, state_dir: Path) -> None:
     """Serve the start page on 127.0.0.1 and keep the kiosk's state up to date."""
-    kiosk = Kiosk(Api(server), Store(state_dir))
+    kiosk = Kiosk(Api(server), Store(state_dir), leave_board=restart_browser)
     threading.Thread(target=kiosk.run_forever, name="kiosk", daemon=True).start()
     httpd = ThreadingHTTPServer((HOST, PORT), make_handler(kiosk))
     logger.info("Riffle kiosk %s on http://%s:%d/ for %s", VERSION, HOST, PORT, server)

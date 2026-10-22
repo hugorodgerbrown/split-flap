@@ -61,7 +61,8 @@ From your computer, `ssh <you>@riffle.local`, then:
 
 Security updates install themselves each day (`unattended-upgrades`).
 
-If you delete the display the Pi shows, it goes back to pairing on its own.
+If you delete the display the Pi shows, it goes back to pairing on its own
+within five minutes.
 
 ## When something is wrong
 
@@ -87,7 +88,9 @@ HDMI sound and `qrencode`, then two systemd services that start on boot:
   start page on `127.0.0.1:8737` and a worker that pairs with the server
   (`POST /d/pair/`, then polls, as the Android TV app does), keeps the link
   in `/var/lib/riffle/display.json`, and checks the board loads before
-  sending the browser to it.
+  sending the browser to it. While the board shows, it checks every five
+  minutes that the display still exists; if it was deleted, it closes the
+  browser so it reopens on a new pairing code.
 - **`riffle-display`** runs Chromium under cage on the TV, full screen,
   allowed to play sound without a tap, always opening the start page. If
   the browser ever closes, systemd starts it again, which re-checks the

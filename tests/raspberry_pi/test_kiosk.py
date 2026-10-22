@@ -267,24 +267,59 @@ def test_pairing_from_start_to_board(kiosk: Any, server: FakeServer) -> None:
     assert kiosk.store.load() == rk.Paired(BOARD, "Kitchen")
 
     server.answer("GET", BOARD, 200)
-    assert kiosk.step() == rk.IDLE_SECONDS
+    assert kiosk.step() == rk.RECHECK_SECONDS
     assert kiosk.state == {"state": "ready", "display_url": BOARD, "display_name": "Kitchen"}
 
 
-def test_a_showing_board_is_not_checked_again_until_the_page_reloads(
-    kiosk: Any, server: FakeServer
-) -> None:
-    """Once the board is showing, nothing is fetched until the start page loads again."""
+def test_a_showing_board_is_checked_every_few_minutes(kiosk: Any, server: FakeServer) -> None:
+    """While the board shows, its display is checked again every few minutes."""
+    kiosk.store.save(rk.Paired(BOARD, "Kitchen"))
+    server.answer("GET", BOARD, 200)
+    assert kiosk.step() == rk.RECHECK_SECONDS
+    assert kiosk.step() == rk.RECHECK_SECONDS
+    assert server.calls == [("GET", BOARD), ("GET", BOARD)]
+
+
+def test_an_outage_while_showing_leaves_the_board_up(kiosk: Any, server: FakeServer) -> None:
+    """The board rides out an outage itself, so the kiosk leaves it showing."""
+    left: list[bool] = []
+    kiosk._leave_board = lambda: left.append(True)
     kiosk.store.save(rk.Paired(BOARD, "Kitchen"))
     server.answer("GET", BOARD, 200)
     kiosk.step()
-    kiosk.step()
-    assert server.calls == [("GET", BOARD)]
+    server.fail("GET", BOARD)
+    assert kiosk.step() == rk.RECHECK_SECONDS
+    assert kiosk.state["state"] == "ready"
+    assert left == []
 
+
+def test_a_display_deleted_while_showing_goes_back_to_pairing(
+    kiosk: Any, server: FakeServer
+) -> None:
+    """A display deleted while its board shows sends the browser back to a new code."""
+    left: list[bool] = []
+    kiosk._leave_board = lambda: left.append(True)
+    kiosk.store.save(rk.Paired(BOARD, "Kitchen"))
+    server.answer("GET", BOARD, 200)
+    kiosk.step()
+    server.answer("GET", BOARD, 404)
+    assert kiosk.step() == 0
+    assert kiosk.store.load() is None
+    assert kiosk.state == {"state": "starting"}
+    assert left == [True]
+
+
+def test_reloading_the_start_page_checks_before_opening_the_board(
+    kiosk: Any, server: FakeServer
+) -> None:
+    """After a browser restart the start page waits for a fresh check, not the old answer."""
+    kiosk.store.save(rk.Paired(BOARD, "Kitchen"))
+    server.answer("GET", BOARD, 200)
+    kiosk.step()
     kiosk.reload()
     assert kiosk.state == {"state": "starting"}
     kiosk.step()
-    assert server.calls == [("GET", BOARD), ("GET", BOARD)]
+    assert kiosk.state["state"] == "ready"
 
 
 def test_an_unreachable_board_is_retried_with_backoff(kiosk: Any, server: FakeServer) -> None:
@@ -525,6 +560,21 @@ def test_status_says_when_the_board_cannot_load(
     monkeypatch.setattr(rk.Api, "check", lambda self, url: "offline")
     rk.Store(tmp_path).save(rk.Paired(BOARD, "Kitchen"))
     assert rk.status(SERVER, tmp_path) == 0
+
+
+def test_restart_browser_closes_this_users_compositor(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Leaving the board closes cage, which systemd restarts on the start page."""
+    seen: list[list[str]] = []
+    monkeypatch.setattr(rk.shutil, "which", lambda name: "/usr/bin/pkill")
+    monkeypatch.setattr(rk.subprocess, "run", lambda args, **kwargs: seen.append(args))
+    rk.restart_browser()
+    assert seen == [["/usr/bin/pkill", "-x", "-u", str(rk.os.getuid()), "cage"]]
+
+
+def test_restart_browser_without_pkill(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Without pkill, leaving the board does nothing."""
+    monkeypatch.setattr(rk.shutil, "which", lambda name: None)
+    rk.restart_browser()
 
 
 def test_restart_display_without_systemd(monkeypatch: pytest.MonkeyPatch) -> None:
