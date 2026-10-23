@@ -34,13 +34,17 @@ apps/mcp/        the MCP endpoint (/mcp) and its tools; auth is mcp-auth.
                  event while FIVEBAR_DOMAIN and FIVEBAR_TOKEN are set
 android-tv/      the Android TV app: a Kotlin shell that pairs by code and
                  shows /d/<uuid>/ full screen (docs/android-tv.md)
+raspberry-pi/    the Raspberry Pi kiosk for any TV: install.sh and a
+                 stdlib-only Python shell, run on the Pi's own Python 3.11+
+                 (docs/raspberry-pi.md)
 templates/       base.html (the app, /app/), public_base.html, includes,
                  errors/ (the error card, its site and standalone pages)
 static/js/       plain JavaScript, classic scripts, no build step
 static/css/      app.css: the design system's tokens on :root, components
                  below (DESIGN.md)
-docs/            accounts, android-tv, board-animation, testing, user-testing,
-                 onboarding-tour, pwa, security, performance, decisions/
+docs/            accounts, android-tv, raspberry-pi, board-animation, testing,
+                 user-testing, onboarding-tour, pwa, security, performance,
+                 decisions/
 .claude/skills/  writing the Titan docs kept in Linear (research, user
                  testing script, blog post), each with a length setting
 ```

@@ -4,6 +4,9 @@
 tile that opens straight onto your display's board. Why it is built this
 way: [docs/decisions/the-tv-app-is-a-shell-around-the-board.md](decisions/the-tv-app-is-a-shell-around-the-board.md).
 
+For a TV that isn't Android (a Samsung, say), use the
+[Raspberry Pi kiosk](raspberry-pi.md) instead.
+
 ## Using it
 
 1. Open **Riffle** on the TV. It shows a code like `K7Q-4MD` and a QR code.
