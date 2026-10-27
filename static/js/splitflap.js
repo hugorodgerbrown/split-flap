@@ -178,6 +178,8 @@
   // Try to start the sound; most browsers let it start only from a tap or key press.
   function startSound() {
     if (!sound.on || sound.running()) return;
+    // Safari's default session is muted by silent mode; a video's isn't.
+    if (navigator.audioSession) navigator.audioSession.type = 'playback';
     sound.init();
     if (!sound.ctx) return;
     sound.ctx.onstatechange = showSound;
@@ -221,9 +223,10 @@
   document.getElementById('fs').addEventListener('click', toggleFs);
 
   // Any tap or key press starts a sound that's waiting, except the Sound button and S,
-  // which do it themselves.
+  // which do it themselves. A touch counts as a tap only once the finger lifts
+  // (pointerup), so Safari on an iPad ignores pointerdown.
   const soundKey = e => e.target.closest?.('#sound') || (e.type === 'keydown' && e.key.toLowerCase() === 's');
-  ['pointerdown', 'keydown'].forEach(ev => addEventListener(ev, e => { if (!soundKey(e)) startSound(); }, { capture: true }));
+  ['pointerdown', 'pointerup', 'keydown'].forEach(ev => addEventListener(ev, e => { if (!soundKey(e)) startSound(); }, { capture: true }));
 
   addEventListener('keydown', e => {
     poke();
@@ -256,6 +259,13 @@
   }
   addEventListener('pointerdown', wake, { once: true });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) wake(); });
+  // iOS stops the sound when the screen locks or another app plays; on coming back,
+  // try again, and if it won't start ask for a tap.
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) return;
+    startSound();
+    showSound();
+  });
 
   // ---- Live content: ask the server what each board shows ----
   let etag = null;

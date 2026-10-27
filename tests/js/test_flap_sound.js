@@ -1,4 +1,5 @@
-// Tests for static/js/flap_sound.js: the flap sound is off until it is turned on.
+// Tests for static/js/flap_sound.js: the flap sound is off until it is turned on,
+// and plays through an iPhone's or iPad's silent mode.
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 const started = vi.fn();
@@ -46,5 +47,20 @@ describe('flap sound', () => {
     window.FlapSound.clack();
     window.FlapSound.clack();
     expect(started.mock.calls.length - before).toBe(1);
+  });
+
+  it('plays whatever the toggle says, for a page that keeps its own setting', () => {
+    window.FlapSound.on = false;
+    window.FlapSound.ctx.currentTime = 3;
+    const before = started.mock.calls.length;
+    window.FlapSound.play();
+    expect(started.mock.calls.length - before).toBe(1);
+  });
+
+  it('asks Safari for the playback session when readied, so silent mode does not mute it', () => {
+    Object.defineProperty(navigator, 'audioSession', { value: { type: 'auto' }, configurable: true });
+    window.FlapSound.unlock();
+    expect(navigator.audioSession.type).toBe('playback');
+    delete navigator.audioSession;
   });
 });

@@ -7,6 +7,7 @@
   <script src="{% static 'js/copy.js' %}" defer></script>
   <script src="{% static 'js/flaptext.js' %}" defer></script>
   <script src="{% static 'js/board_preview.js' %}" defer></script>
+  <script src="{% static 'js/flap_sound.js' %}" defer></script>
   <script src="{% static 'js/flapmotion.js' %}" defer></script>
   <script src="{% static 'js/board_motion.js' %}" defer></script>
 {% endblock %}
@@ -26,7 +27,7 @@
         <div class="button-row" id="display-controls" hx-target="#display-controls" hx-select="#display-controls" hx-swap="outerHTML">
           <form class="button-row button-row--fixed" id="sound" method="post" action="{% url 'boards:sound' %}" hx-post="{% url 'boards:sound' %}">
             {% csrf_token %}<input type="hidden" name="board" value="{{ board.uuid }}">
-            <span class="item__title" id="sound-label">Sound</span><span id="sound-help" hidden>A soft clack as each flap turns. The display starts it at the first tap or key press.</span>
+            <span class="item__title" id="sound-label">Sound</span><span id="sound-help" hidden>A soft clack as each flap turns, here and on the display. Each starts it at the first tap or key press.</span>
             {% include "boards/_switch.html" with on=display.sound labelledby="sound-label" describedby="sound-help" %}
           </form>
           {% if display.sound %}

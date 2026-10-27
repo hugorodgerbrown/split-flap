@@ -101,3 +101,41 @@ describe('Save', () => {
     expect(show).not.toHaveBeenCalled();
   });
 });
+
+describe('sound', () => {
+  const SWITCH = (on) => `<form id="sound"><button role="switch" aria-checked="${on}"></button></form>`;
+
+  beforeEach(() => {
+    self.FlapSound = { play: vi.fn(), unlock: vi.fn() };
+  });
+
+  afterEach(() => {
+    delete self.FlapSound;
+  });
+
+  it('clacks with each flap while the Sound switch is on, and not once it is off', () => {
+    document.body.innerHTML = PREVIEW('News', 'Old') + SWITCH(true);
+    const board = BoardMotion.attach(document.getElementById('display-preview'));
+    board.hooks.clack();
+    expect(self.FlapSound.play).toHaveBeenCalledTimes(1);
+    document.querySelector('[role="switch"]').setAttribute('aria-checked', 'false');
+    board.hooks.clack();
+    expect(self.FlapSound.play).toHaveBeenCalledTimes(1);
+  });
+
+  it('readies the sound when a touch lifts or a key is pressed', () => {
+    document.body.innerHTML = PREVIEW('News', 'Old') + SWITCH(true);
+    document.body.dispatchEvent(new Event('pointerup', { bubbles: true }));
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    expect(self.FlapSound.unlock).toHaveBeenCalledTimes(2);
+  });
+
+  it('stays quiet on a page with no Sound switch', () => {
+    document.body.innerHTML = PREVIEW('News', 'Old');
+    const board = BoardMotion.attach(document.getElementById('display-preview'));
+    board.hooks.clack();
+    document.body.dispatchEvent(new Event('pointerup', { bubbles: true }));
+    expect(self.FlapSound.play).not.toHaveBeenCalled();
+    expect(self.FlapSound.unlock).not.toHaveBeenCalled();
+  });
+});

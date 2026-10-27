@@ -177,6 +177,43 @@ describe('the sound setting', () => {
   });
 });
 
+describe('on an iPad or iPhone', () => {
+  afterEach(() => {
+    delete navigator.audioSession;
+  });
+
+  it('starts the sound when a touch lifts, the moment Safari counts as a tap', async () => {
+    await load(true);
+    FakeAudioContext.allowed = true;
+    document.getElementById('board').dispatchEvent(new Event('pointerup', { bubbles: true }));
+    expect(FakeAudioContext.made.at(-1).state).toBe('running');
+    expect(hint().hidden).toBe(true);
+  });
+
+  it('asks Safari for the playback session, so silent mode does not mute it', async () => {
+    Object.defineProperty(navigator, 'audioSession', { value: { type: 'auto' }, configurable: true });
+    await load(true);
+    FakeAudioContext.allowed = true;
+    tap();
+    expect(navigator.audioSession.type).toBe('playback');
+  });
+
+  it('asks for a tap again when the sound was stopped while the page was away', async () => {
+    await load(true);
+    FakeAudioContext.allowed = true;
+    tap();
+    const ctx = FakeAudioContext.made.at(-1);
+    ctx.state = 'interrupted';
+    FakeAudioContext.allowed = false;
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(hint().hidden).toBe(false);
+    FakeAudioContext.allowed = true;
+    tap();
+    expect(ctx.state).toBe('running');
+    expect(hint().hidden).toBe(true);
+  });
+});
+
 describe('the flaps and their clacks', () => {
   // When each flap is drawn: the moment its falling leaf starts to animate.
   let drawn;
