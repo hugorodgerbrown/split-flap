@@ -15,7 +15,8 @@
  * any soundbar), and a flap lasts about 50 ms, so while the sound plays each flap
  * is drawn that much later than its clack is played: the delay the browser
  * reports plus the display's Sound timing (state.sound_delay_ms). The display
- * page's Replay button (state.replays) flips the board again from blank.
+ * page's Replay button (state.replays) flips the board again from blank, as do
+ * the HUD's Replay button and the R key, so the sound can be checked on this screen.
  */
 (() => {
   const { COLS, ROWS, message } = self.FlapText;
@@ -220,6 +221,7 @@
 
   cycleBtn.addEventListener('click', () => setAuto(!auto));
   soundBtn.addEventListener('click', toggleSound);
+  document.getElementById('replay').addEventListener('click', replay);
   document.getElementById('fs').addEventListener('click', toggleFs);
 
   // Any tap or key press starts a sound that's waiting, except the Sound button and S,
@@ -237,6 +239,7 @@
     else if (/^[1-9]$/.test(k) && +k <= BOARDS.length) select(+k - 1);
     else if (k === ' ') { e.preventDefault(); setAuto(!auto); }
     else if (k === 's') toggleSound();
+    else if (k === 'r') replay();
     else if (k === '-' || k === '_') setSpeed(speed - 1);
     else if (k === '=' || k === '+') setSpeed(speed + 1);
     else if (k === 'f') toggleFs();

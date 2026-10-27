@@ -19,6 +19,7 @@ const page = (sound, attrs = '') => `
     <div id="tabs"></div><div id="speed"></div>
     <button id="cycle" type="button" aria-pressed="true">Auto-cycle</button>
     <button id="sound" type="button" aria-pressed="false">Sound</button>
+    <button id="replay" type="button">Replay</button>
     <button id="fs" type="button">Full screen</button>
   </div>`;
 
@@ -286,6 +287,19 @@ describe('the flaps and their clacks', () => {
     expect(drawn.length).toBe(settled);
     state = { ...state, replays: 1 };
     await poll();
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(drawn.length).toBeGreaterThan(settled);
+  });
+
+  it("flips the board again from this screen's Replay button and the R key", async () => {
+    await load(false, { motion: true });
+    await post('HELLO');
+    let settled = drawn.length;
+    document.getElementById('replay').click();
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(drawn.length).toBeGreaterThan(settled);
+    settled = drawn.length;
+    press('r');
     await vi.advanceTimersByTimeAsync(5000);
     expect(drawn.length).toBeGreaterThan(settled);
   });
