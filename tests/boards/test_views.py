@@ -97,7 +97,7 @@ def test_manage_needs_sign_in(client: Client) -> None:
 
 
 def test_manage_shows_the_links_preview_and_boards(signed_in: Client, user: Any) -> None:
-    """The display page has the display's link, the MCP address, and each board in order."""
+    """The display page links the display (new tab), the MCP address, and each board in order."""
     display = display_for(user)
     post_message(display, "Hello :sun:")
     BoardFactory.create(display=display, name="Weather", position=1)
@@ -105,6 +105,7 @@ def test_manage_shows_the_links_preview_and_boards(signed_in: Client, user: Any)
     content = response.content.decode()
     assert response.status_code == 200
     assert f"/d/{display.uuid}/" in content
+    assert f'/d/{display.uuid}/" target="_blank" rel="noopener">' in content
     assert "/mcp" in content
     assert content.index("Home") < content.index("Weather")
     assert 'aria-label="Home: Hello :sun:"' in content
