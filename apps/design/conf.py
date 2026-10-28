@@ -38,6 +38,7 @@ NEEDS_NETWORK: dict[str, str] = {
     "js/design.js": "the design page is a staff reference, not the app",
     "js/flapmotion.js": "the preview flips only online; offline it's drawn still",
     "js/board_motion.js": "the preview flips only online; offline it's drawn still",
+    "js/flap_sound.js": "the preview clacks only as it flips, which is only online",
     "js/board_tuning.js": "the board tuning page is a staff tool, not the app",
     "css/tuning.css": "the board tuning page is a staff tool, not the app",
 }

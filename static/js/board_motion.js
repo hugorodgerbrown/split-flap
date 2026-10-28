@@ -12,6 +12,11 @@
  *
  * While you type, board_preview.js snaps it to your draft. Not in the
  * precached shell: offline, the preview stays still.
+ *
+ * While the display's Sound switch is on, the preview clacks too
+ * (static/js/flap_sound.js). Browsers hold sound until a tap, so the first
+ * tap or key press on the page readies it; the switch is read at each clack,
+ * so turning it off silences the preview at once.
  */
 (function () {
   'use strict';
@@ -19,12 +24,22 @@
   const { Board } = self.FlapMotion;
   const { message } = self.FlapText;
 
+  // Whether the display's Sound switch is on.
+  function soundOn() {
+    const toggle = document.querySelector('#sound [role="switch"]');
+    return Boolean(toggle) && toggle.getAttribute('aria-checked') === 'true';
+  }
+
+  function clack() {
+    if (soundOn() && self.FlapSound) self.FlapSound.play();
+  }
+
   // Give a still preview a Board of its own, showing what it shows now.
   function attach(preview) {
     if (preview.motion) return preview.motion;
     const grid = preview.querySelector('[data-flapboard-grid]');
     grid.replaceChildren();
-    preview.motion = new Board(grid);
+    preview.motion = new Board(grid, { clack: clack });
     preview.motion.snap(message(preview.dataset.text));
     return preview.motion;
   }
@@ -61,6 +76,13 @@
     if (event.target.id !== 'replay') return;
     const preview = document.querySelector('[data-flapboard]');
     if (preview) flip(preview, '', preview.dataset.text);
+  });
+
+  // Ready the sound at a tap or key press; a touch counts once the finger lifts.
+  ['pointerup', 'keydown'].forEach(function (type) {
+    document.addEventListener(type, function () {
+      if (self.FlapSound && document.querySelector('#sound [role="switch"]')) self.FlapSound.unlock();
+    }, { capture: true });
   });
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);

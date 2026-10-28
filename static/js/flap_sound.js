@@ -5,6 +5,10 @@
  * flaps fall at once, and does nothing while the sound is off. The sound is
  * off until the person turns it on (FlapSound.toggle(), from a tap), because
  * browsers hold audio until a tap and a page shouldn't make noise unasked.
+ * FlapSound.play() clacks whatever ``on`` says, for a page that keeps its own
+ * setting (the display page's preview, static/js/board_motion.js), and
+ * FlapSound.unlock() readies it from a tap. Safari is asked for the playback
+ * audio session, so silent mode on an iPhone or iPad doesn't mute it.
  * The same sound as the display's (static/js/splitflap.js).
  */
 (() => {
@@ -35,15 +39,24 @@
       lp.type = 'lowpass'; lp.frequency.value = 6000;
       this.out.connect(lp).connect(this.ctx.destination);
     },
+    // Make the sound ready to play; call it from a tap, so the browser lets it.
+    unlock() {
+      // Safari's default session is muted by silent mode; a video's isn't.
+      if (navigator.audioSession) navigator.audioSession.type = 'playback';
+      this.init();
+      this.ctx?.resume?.()?.catch?.(() => {});
+    },
     // Turns the sound on or off; call it from a tap, so the browser lets it play.
     toggle() {
-      this.init();
-      this.ctx?.resume?.();
+      this.unlock();
       this.on = !this.on;
       return this.on;
     },
     clack() {
-      if (!this.on || !this.ctx) return;
+      if (this.on) this.play();
+    },
+    play() {
+      if (!this.ctx) return;
       const t = this.ctx.currentTime;
       if (t - this.last < 0.005) return;
       this.last = t;
